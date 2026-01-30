@@ -52,3 +52,34 @@ main { margin-left: 300px; height: 100vh; overflow-y: auto; padding: 30px; backg
 .btn-admin i {
     margin-right: 8px;
 }
+
+.admin-header {
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* 按鈕跟文字的間距 */
+}
+
+.btn-back {
+    text-decoration: none;
+    color: #666;
+    background: #f0f0f0;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: #e0e0e0;
+    color: #333;
+    border-color: #bbb;
+}
