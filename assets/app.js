@@ -55,6 +55,7 @@ function initApp() {
             timer = setTimeout(() => handleSearch(e.target.value), 300);
         });
     }
+
     window.addEventListener('hashchange', renderCurrentHash);
 
     // 4. 初次渲染
@@ -68,6 +69,7 @@ function initApp() {
  */
 function mergeData(map) {
     const base = map.zh || map.en; // 骨幹
+
     // 深拷貝避免汙染原始資料
     const categories = JSON.parse(JSON.stringify(base.categories));
 
@@ -77,18 +79,20 @@ function mergeData(map) {
             // 把原本單字串的 title 轉為物件: title: { zh: "..." }
             const originalTitle = node.title;
             node.title = {};
-            
+
             // 遍歷所有語言填入
             for (const [lang, data] of Object.entries(map)) {
                 if (!data) continue;
+
                 // 在該語言資料中尋找對應 ID
                 const foundNode = findNodeById(data.categories, node.id, level);
                 if (foundNode) {
                     node.title[lang] = foundNode.title;
-                    
+
                     // 如果是問題層級 (Question)，還要合併 content
                     if (level === 'question') {
                         if (!node.content) node.content = { symptoms:{}, rootCauses:{}, solutionSteps:{}, notes:{} };
+
                         // 初始化多語系容器
                         ['symptoms', 'rootCauses', 'solutionSteps', 'notes'].forEach(key => {
                             if(!node.content[key] || Array.isArray(node.content[key]) || typeof node.content[key] === 'string') {
@@ -129,7 +133,6 @@ function findNodeById(categories, id, level) {
 }
 
 // --- 渲染與搜尋邏輯 (與先前類似，但適配多語系物件) ---
-
 function renderTOC(categories) {
     const sidebar = document.getElementById('sidebar-content');
     if(!categories.length) { sidebar.innerHTML = '無資料'; return; }
@@ -162,7 +165,7 @@ function renderTOC(categories) {
 function renderCurrentHash() {
     const id = window.location.hash.replace('#', '');
     if (!id) return;
-    
+
     // 從合併後的資料找
     const q = findNodeById(STATE.mergedData.categories, id, 'question');
     if (q) {
@@ -174,11 +177,11 @@ function renderCurrentHash() {
                 ${renderList('症狀', content.symptoms)}
                 ${renderList('可能原因', content.rootCauses)}
                 ${renderList('解決步驟', content.solutionSteps)}
-                ${pickText(content.notes) ? `<div class="note"><b>Note:</b> ${esc(pickText(content.notes))}</div>` : ''}
+                ${pickText(content.notes) ? `<div class="note"><b>Note:</b> ${renderRichText(pickText(content.notes))}</div>` : ''}
             </div>
         `;
         document.getElementById('main-content').innerHTML = html;
-        
+
         // Highlight Sidebar
         document.querySelectorAll('.toc-link').forEach(el => el.classList.remove('active'));
         const link = document.querySelector(`.toc-link[data-id="${id}"]`);
@@ -192,12 +195,12 @@ function renderCurrentHash() {
 function renderList(label, obj) {
     const list = obj[STATE.currentLang]; // 嚴格取當前語言
     if (!list || !list.length) return '';
-    return `<div class="section"><h3>${label}</h3><ul>${list.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`;
+    return `<div class="section"><h3>${escHtml(label)}</h3><ul>${list.map(i=>`<li>${renderRichText(i)}</li>`).join('')}</ul></div>`;
 }
 
 function initSearch(categories) {
     if (typeof Fuse === 'undefined') return;
-    
+
     // 攤平資料建立索引
     const list = [];
     categories.forEach(cat => {
@@ -206,14 +209,17 @@ function initSearch(categories) {
                 list.push({
                     id: q.id,
                     // 搜尋時同時索引所有語言的標題，增加命中率
-                    title: Object.values(q.title || {}).join(' '), 
+                    title: Object.values(q.title || {}).join(' '),
                     content: JSON.stringify(q.content || {})
                 });
             });
         });
     });
-    
-    STATE.fuse = new Fuse(list, { keys: ['id', 'title', 'content'], threshold: 0.3 });
+
+    STATE.fuse = new Fuse(list, {
+        keys: ['id', 'title', 'content'],
+        threshold: 0.3
+    });
 }
 
 function handleSearch(val) {
@@ -233,5 +239,37 @@ function handleSearch(val) {
 
 // Utils
 function pickText(obj) { return obj ? (obj[STATE.currentLang] || "") : ""; }
-function esc(t) { return t ? t.replace(/</g,"&lt;") : ""; }
+
+function escHtml(s) {
+    return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function escAttr(s) { return escHtml(s); }
+
+// 解析 {{img:path}}，並把文字安全輸出
+function renderRichText(str) {
+    const s = String(str ?? "");
+    const re = /\{\{img:([^}]+)\}\}/g;
+    let out = "";
+    let last = 0;
+    let m;
+
+    while ((m = re.exec(s)) !== null) {
+        out += escHtml(s.slice(last, m.index));
+        const path = (m[1] || "").trim();
+        out += `<img class="faq-img" src="${escAttr(path)}" alt="">`;
+        last = re.lastIndex;
+    }
+    out += escHtml(s.slice(last));
+    return out;
+}
+
+// 保留舊名字，避免其他地方引用 esc() 壞掉
+function esc(t) { return escHtml(t); }
+
 function toggle(el) { el.nextElementSibling.classList.toggle('hidden'); }
