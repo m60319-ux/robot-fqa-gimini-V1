@@ -21,12 +21,14 @@ window.FAQ_DATA_ZH = {
                                     "{{img:assets/images/img_1769762101833.png}}"
                                 ],
                                 "rootCauses": [
-                                    "保險絲斷"
+                                    "保險絲斷",
+                                    "{{img:assets/images/img_1769763508765.png}}"
                                 ],
                                 "solutionSteps": [
-                                    "更換保險絲"
+                                    "更換保險絲",
+                                    "{{img:assets/images/img_1769763514401.png}}"
                                 ],
-                                "notes": "注意安全"
+                                "notes": "注意安全\n{{img:assets/images/img_1769763517692.png}}"
                             }
                         }
                     ]
