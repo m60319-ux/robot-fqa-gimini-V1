@@ -1,1 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot FAQ System</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    
+    <script src="assets/libs/fuse.min.js"></script>
+</head>
+<body>
 
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <select id="lang-select">
+                <option value="zh">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+                <option value="th">ไทย</option>
+            </select>
+            <input type="text" id="search-input" placeholder="Search...">
+        </div>
+        <div id="error-message"></div>
+        <nav id="sidebar-content"></nav>
+    </aside>
+
+    <main id="main-content">
+        <div class="empty-state">請選擇問題 / Select a question</div>
+    </main>
+
+    <script src="assets/data/data.zh.js?v=2"></script>
+    <script src="assets/data/data.cn.js"></script>
+    <script src="assets/data/data.en.js"></script>
+    <script src="assets/data/data.th.js"></script>
+
+    <script src="assets/app.js"></script>
+</body>
+</html>
