@@ -241,14 +241,13 @@ function handleSearch(val) {
 function pickText(obj) { return obj ? (obj[STATE.currentLang] || "") : ""; }
 
 function escHtml(s) {
-    return String(s ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
-
 function escAttr(s) { return escHtml(s); }
 
 // 解析 {{img:path}}，並把文字安全輸出
