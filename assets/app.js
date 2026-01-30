@@ -253,21 +253,22 @@ function escAttr(s) { return escHtml(s); }
 
 // 解析 {{img:path}}，並把文字安全輸出
 function renderRichText(str) {
-    const s = String(str ?? "");
-    const re = /\{\{img:([^}]+)\}\}/g;
-    let out = "";
-    let last = 0;
-    let m;
+  const s = String(str ?? "");
+  const re = /\{\{img:([^}]+)\}\}/g;
+  let out = "";
+  let last = 0;
+  let m;
 
-    while ((m = re.exec(s)) !== null) {
-        out += escHtml(s.slice(last, m.index));
-        const path = (m[1] || "").trim();
-        out += `<img class="faq-img" src="${escAttr(path)}" alt="">`;
-        last = re.lastIndex;
-    }
-    out += escHtml(s.slice(last));
-    return out;
+  while ((m = re.exec(s)) !== null) {
+    out += escHtml(s.slice(last, m.index));
+    const path = (m[1] || "").trim();
+    out += `<img class="faq-img" src="${escAttr(path)}" alt="">`;
+    last = re.lastIndex;
+  }
+  out += escHtml(s.slice(last));
+  return out;
 }
+
 
 // 保留舊名字，避免其他地方引用 esc() 壞掉
 function esc(t) { return escHtml(t); }
