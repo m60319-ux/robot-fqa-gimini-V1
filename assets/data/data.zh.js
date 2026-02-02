@@ -33,6 +33,34 @@ window.FAQ_DATA_ZH = {
                     ]
                 }
             ]
+        },
+        {
+            "id": "CAT-9742",
+            "title": "New",
+            "subcategories": [
+                {
+                    "id": "SUB-3842",
+                    "title": "New",
+                    "questions": [
+                        {
+                            "id": "Q-6967",
+                            "title": "New",
+                            "content": {
+                                "symptoms": [
+                                    "321"
+                                ],
+                                "rootCauses": [
+                                    "123"
+                                ],
+                                "solutionSteps": [
+                                    "321"
+                                ],
+                                "notes": "123"
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     ]
 };
