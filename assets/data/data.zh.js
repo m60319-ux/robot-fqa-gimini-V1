@@ -1,7 +1,7 @@
 window.FAQ_DATA_ZH = {
     "meta": {
         "lang": "zh",
-        "version": "1.0"
+        "version": "1.01"
     },
     "categories": [
         {
