@@ -18,7 +18,7 @@ window.FAQ_DATA_ZH = {
                             "content": {
                                 "symptoms": [
                                     //"燈號未亮",
-                                    "{{img:assets/images/img_1769763514401.png}}"
+                                    "{{img:https://m60319-ux.github.io/robot-fqa-gimini-V1/assets/images/img_1769762101833.png}}"
                                 ],
                                 "rootCauses": [
                                     "保險絲斷",
