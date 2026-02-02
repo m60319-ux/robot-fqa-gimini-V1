@@ -1,22 +1,33 @@
-window.FAQ_DATA_ZH = {
-    "meta": { "lang": "zh", "version": "1.0" },
+window.FAQ_DATA_TH = {
+    "meta": {
+        "lang": "th",
+        "version": "1.0"
+    },
     "categories": [
         {
             "id": "CAT-01",
-            "title": "硬體問題",
+            "title": "ปัญหาฮาร์ดแวร์",
             "subcategories": [
                 {
                     "id": "SUB-01",
-                    "title": "馬達異常",
+                    "title": "มอเตอร์ผิดปกติ",
                     "questions": [
                         {
                             "id": "Q-001",
-                            "title": "無法過電",
+                            "title": "ไม่มีไฟเข้า",
                             "content": {
-                                "symptoms": ["燈號未亮"],
-                                "rootCauses": ["保險絲斷"],
-                                "solutionSteps": ["更換保險絲"],
-                                "notes": "注意安全"
+                                "symptoms": [
+                                    "ไฟ LED ไม่ติด"
+                                ],
+                                "rootCauses": [
+                                    "ฟิวส์ขาด",
+                                    "{{img:assets/images/img_1769763508765.png}}"
+                                ],
+                                "solutionSteps": [
+                                    "เปลี่ยนฟิวส์",
+                                    "{{img:assets/images/img_1769763514401.png}}"
+                                ],
+                                "notes": "ระวังความปลอดภัย\n{{img:assets/images/img_1769763517692.png}}"
                             }
                         }
                     ]
