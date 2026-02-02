@@ -13,7 +13,7 @@ window.FAQ_DATA_TH = {
                     "title": "มอเตอร์ผิดปกติ",
                     "questions": [
                         {
-                            "id": "Q-009",
+                            "id": "Q-001",
                             "title": "ไม่มีไฟเข้า",
                             "content": {
                                 "symptoms": [
@@ -28,6 +28,28 @@ window.FAQ_DATA_TH = {
                                     "{{img:assets/images/img_1769763514401.png}}"
                                 ],
                                 "notes": "ระวังความปลอดภัย\n{{img:assets/images/img_1769763517692.png}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "CAT-4510",
+            "title": "1234",
+            "subcategories": [
+                {
+                    "id": "SUB-7886",
+                    "title": "New1",
+                    "questions": [
+                        {
+                            "id": "Q-4988",
+                            "title": "New",
+                            "content": {
+                                "symptoms": [],
+                                "rootCauses": [],
+                                "solutionSteps": [],
+                                "notes": ""
                             }
                         }
                     ]
