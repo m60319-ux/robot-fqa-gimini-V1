@@ -1,7 +1,7 @@
 window.FAQ_DATA_ZH = {
     "meta": {
         "lang": "zh",
-        "version": "1.01"
+        "version": "1.0"
     },
     "categories": [
         {
@@ -17,15 +17,17 @@ window.FAQ_DATA_ZH = {
                             "title": "無法過電",
                             "content": {
                                 "symptoms": [
-                                    "燈號未"
+                                    "燈號未亮"
                                 ],
                                 "rootCauses": [
-                                    "保險絲斷"
+                                    "保險絲斷",
+                                    "{{img:assets/images/img_1769763508765.png}}"
                                 ],
                                 "solutionSteps": [
-                                    "更換保險絲"
+                                    "更換保險絲",
+                                    "{{img:assets/images/img_1769763514401.png}}"
                                 ],
-                                "notes": "注意安全"
+                                "notes": "注意安全\n{{img:assets/images/img_1769763517692.png}}"
                             }
                         }
                     ]
