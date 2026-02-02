@@ -27,7 +27,10 @@ window.FAQ_DATA_CN = {
                                     "更换保险丝",
                                     "{{img:assets/images/img_1769763514401.png}}"
                                 ],
-                                "notes": "注意安全\n{{img:assets/images/img_1769763517692.png}}"
+                                "notes": "注意安全\n{{img:assets/images/img_1769763517692.png}}",
+                                "keywords": [
+                                    "AL001"
+                                ]
                             }
                         }
                     ]
