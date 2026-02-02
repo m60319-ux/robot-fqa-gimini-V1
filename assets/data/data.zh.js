@@ -18,7 +18,7 @@ window.FAQ_DATA_ZH = {
                             "content": {
                                 "symptoms": [
                                     "燈號未亮",
-                                    "{{img:assets/images/img_1769762101833.png}}"
+                                    "{{img:assets/images/img_1769763514401.png}}"
                                 ],
                                 "rootCauses": [
                                     "保險絲斷",
