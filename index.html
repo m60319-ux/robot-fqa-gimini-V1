@@ -5,39 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robot FAQ System</title>
     <link rel="stylesheet" href="assets/styles.css">
+    <!-- 消除 favicon 404 錯誤 -->
+    <link rel="icon" href="data:,">
     
+    <!-- 1. 載入第三方庫 (搜尋引擎) -->
     <script src="assets/libs/fuse.min.js"></script>
 </head>
 <body>
 
     <aside id="sidebar">
-        <div class="admin-entry">
-            <a href="admin.html" class="btn-admin">
-                <i class="icon-settings">⚙️</i> 進入管理後台
-            </a>
-        </div>
         <div class="sidebar-header">
+            <!-- 後台入口按鈕 -->
+            <div class="admin-entry">
+                <a href="admin.html" class="btn-admin">⚙️ 進入管理後台</a>
+            </div>
+
             <select id="lang-select">
                 <option value="zh">繁體中文</option>
                 <option value="zh-CN">简体中文</option>
                 <option value="en">English</option>
                 <option value="th">ไทย</option>
             </select>
-            <input type="text" id="search-input" placeholder="Search...">
+            <input type="text" id="search-input" placeholder="搜尋關鍵字...">
         </div>
         <div id="error-message"></div>
         <nav id="sidebar-content"></nav>
     </aside>
 
     <main id="main-content">
-        <div class="empty-state">請選擇問題 / Select a question</div>
+        <div class="empty-state">
+            <p>請點選左側目錄選擇問題</p>
+            <small>Select a question from the sidebar</small>
+        </div>
     </main>
 
-    <script src="assets/data/data.zh.js"></script>
-    <script src="assets/data/data.cn.js"></script>
-    <script src="assets/data/data.en.js"></script>
-    <script src="assets/data/data.th.js"></script>
+    <!-- 2. 載入資料檔 (⚠️重點：加上版本號 ?v=... 強制更新快取) -->
+    <script src="assets/data/data.zh.js?v=20260202"></script>
+    <script src="assets/data/data.cn.js?v=20260202"></script>
+    <script src="assets/data/data.en.js?v=20260202"></script>
+    <script src="assets/data/data.th.js?v=20260202"></script>
 
-    <script src="assets/app.js"></script>
+    <!-- 3. 載入前台邏輯 -->
+    <script src="assets/app.js?v=20260202"></script>
 </body>
 </html>
