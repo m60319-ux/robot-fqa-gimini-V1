@@ -1,31 +1,33 @@
-window.FAQ_DATA_ZH = {
+window.FAQ_DATA_EN = {
     "meta": {
-        "lang": "zh",
+        "lang": "en",
         "version": "1.0"
     },
     "categories": [
         {
             "id": "CAT-01",
-            "title": "硬體問題",
+            "title": "Hardware Issues",
             "subcategories": [
                 {
                     "id": "SUB-01",
-                    "title": "馬達異常",
+                    "title": "Motor Anomaly",
                     "questions": [
                         {
-                            "id": "Q-002",
-                            "title": "無法過電",
+                            "id": "Q-001",
+                            "title": "Power Failure",
                             "content": {
                                 "symptoms": [
-                                    "燈號未亮"
+                                    "LED not lighting up"
                                 ],
                                 "rootCauses": [
-                                    "保險絲斷"
+                                    "Fuse blown",
+                                    "{{img:assets/images/img_1769763508765.png}}"
                                 ],
                                 "solutionSteps": [
-                                    "更換保險絲"
+                                    "Replace fuse",
+                                    "{{img:assets/images/img_1769763514401.png}}"
                                 ],
-                                "notes": "注意安全"
+                                "notes": "Safety first\n{{img:assets/images/img_1769763517692.png}}"
                             }
                         }
                     ]
