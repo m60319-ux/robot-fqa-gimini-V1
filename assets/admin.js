@@ -190,34 +190,93 @@ async function loadGithubFile(lang) {
         document.getElementById('tree-root').innerHTML = '';
     }
 }
+async function saveGithubData() {
+    const saveBtn = document.getElementById('saveGithubBtn');
+    
+    // 1. 【關鍵修正】先記住按鈕原本的文字 (例如 "儲存並上傳 GitHub")
+    const oldText = saveBtn.innerText;
 
-async function saveGithubData(content, lang) {
+    // 2. 檢查設定
+    const token = document.getElementById('gh_token').value.trim();
+    const user = document.getElementById('gh_user').value.trim();
+    const repo = document.getElementById('gh_repo').value.trim();
+
+    if (!token || !user || !repo) {
+        alert('請先在上方輸入 GitHub Token、User 與 Repo 資訊！');
+        return;
+    }
+
+    // 3. 鎖定按鈕，避免重複點擊
+    saveBtn.disabled = true;
+    saveBtn.innerText = '⏳ 正在讀取遠端 SHA...';
+
     try {
-        // Base64 編碼
-        const contentBase64 = btoa(unescape(encodeURIComponent(content)));
-        const path = `assets/data/data.${lang}.js`;
-        
-        const btn = document.getElementById('btn-save-all');
-        const oldText = btn.innerText;
-        btn.innerText = "⏳ 上傳中...";
-        btn.disabled = true;
+        // --- 步驟 A: 取得目前的檔案資訊 (為了拿到 SHA) ---
+        // 我們要更新的是 data.zh.js
+        const path = 'assets/data/data.zh.js';
+        const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
 
-        await ghRequest(path, 'PUT', {
-            message: `Update data.${lang}.js via Admin`,
-            content: contentBase64,
-            branch: 'main' // 視情況修改分支
+        const getRes = await fetch(apiUrl, {
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
         });
+
+        if (!getRes.ok) {
+            throw new Error(`無法讀取檔案 SHA (Status: ${getRes.status}) - 請確認 Repo 名稱正確`);
+        }
         
-        alert("✅ 成功上傳至 GitHub！(請等待 Pages 更新)");
-    } catch(e) {
-        alert("GitHub 上傳失敗: " + e.message);
+        const fileData = await getRes.json();
+        const currentSha = fileData.sha; // 拿到這張「入場券」才能更新檔案
+
+        // --- 步驟 B: 準備要上傳的新內容 ---
+        saveBtn.innerText = '⏳ 正在上傳新資料...';
+        
+        // 取得編輯器裡的文字
+        const content = document.getElementById('jsonEditor').value;
+        
+        // 驗證一下 JSON 格式是否正確 (避免上傳壞掉的檔案)
+        try {
+            JSON.parse(content);
+        } catch (e) {
+            throw new Error('JSON 格式有錯 (逗號問題？)，請先修正後再上傳！\n' + e.message);
+        }
+
+        // GitHub API 需要 Base64 編碼，並且解決中文亂碼問題
+        const encodedContent = btoa(unescape(encodeURIComponent(content)));
+
+        // --- 步驟 C: 發送 PUT 請求更新檔案 ---
+        const putRes = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: 'Update data.zh.js via Admin Panel', // Commit 訊息
+                content: encodedContent,
+                sha: currentSha // 帶上剛剛拿到的 SHA
+            })
+        });
+
+        if (!putRes.ok) {
+            const errData = await putRes.json();
+            throw new Error(`上傳失敗: ${errData.message}`);
+        }
+
+        alert('🎉 成功！資料已更新到 GitHub！\n(請等待約 1~2 分鐘後重新整理網頁)');
+
+    } catch (error) {
+        console.error(error);
+        alert('❌ 錯誤: ' + error.message);
     } finally {
-        const btn = document.getElementById('btn-save-all');
-        btn.innerText = oldText;
-        btn.disabled = false;
+        // 4. 【關鍵修正】不管成功失敗，把按鈕文字改回來
+        saveBtn.disabled = false;
+        saveBtn.innerText = oldText; // 這裡現在找得到 oldText 了！
     }
 }
-
 async function saveGithubImage(base64Content, filename) {
     try {
         await ghRequest(`assets/images/${filename}`, 'PUT', {
