@@ -17,7 +17,7 @@ window.FAQ_DATA_ZH = {
                             "title": "無法過電",
                             "content": {
                                 "symptoms": [
-                                    "燈號未",
+                                    "燈號未"
                                 ],
                                 "rootCauses": [
                                     "保險絲斷",
