@@ -16,14 +16,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initLightbox();
 
-    // 🚀 新增：動態載入資料 (自動破除快取)
-    // 程式會自動加上時間戳記，確保每次看到的都是最新的
+    // 🚀 動態載入資料 (自動破除快取)
     loadDataScripts().then(() => {
         initApp();
     });
 });
 
-// 🚀 核心功能：動態插入 script 標籤並加上時間戳記
+// 核心功能：動態插入 script 標籤並加上時間戳記
 function loadDataScripts() {
     const langs = ['zh', 'cn', 'en', 'th'];
     const version = new Date().getTime(); // 使用當下時間作為版本號
@@ -33,7 +32,6 @@ function loadDataScripts() {
     const promises = langs.map(lang => {
         return new Promise((resolve) => {
             const script = document.createElement('script');
-            // 關鍵：加上 ?v=... 參數
             script.src = `assets/data/data.${lang}.js?v=${version}`;
             script.onload = () => {
                 console.log(`[App] Loaded data.${lang}.js`);
@@ -41,7 +39,7 @@ function loadDataScripts() {
             };
             script.onerror = () => {
                 console.warn(`[App] Failed to load data.${lang}.js (File might not exist yet)`);
-                resolve(); // 失敗也繼續，避免卡死整個 App
+                resolve();
             };
             document.body.appendChild(script);
         });
@@ -80,7 +78,10 @@ function initApp() {
         });
     }
     window.addEventListener('hashchange', renderCurrentHash);
+    
+    // ✅ 恢復目錄渲染
     renderTOC(STATE.mergedData.categories);
+    
     renderCurrentHash();
 }
 
@@ -187,23 +188,76 @@ function renderCurrentHash() {
                 ${note ? `<div class="note"><b>Note:</b> ${parseContent(note)}</div>` : ''}
             </div>
         `;
+        // 點擊連結後自動展開目錄
+        highlightSidebar(id);
     }
 }
 
+// ✅ 恢復：渲染目錄函式 (預設隱藏子層級)
 function renderTOC(nodes) {
-    let html='<ul>';
+    let html='<ul class="toc-root">';
     nodes.forEach(cat => {
-        html += `<li><div class="toc-item cat" onclick="toggle(this)">${cat.title[STATE.currentLang]} <span class="arrow">▼</span></div><ul class="toc-sub hidden">`;
+        // 第一層 Category
+        html += `
+            <li>
+                <div class="toc-item cat" onclick="toggle(this)">
+                    ${cat.title[STATE.currentLang]} <span class="arrow">▼</span>
+                </div>
+                <ul class="toc-sub hidden">
+        `;
+        
         cat.subcategories.forEach(sub => {
-            html += `<li><div class="toc-item sub" onclick="toggle(this)">${sub.title[STATE.currentLang]} <span class="arrow">▼</span></div><ul class="toc-q hidden">`;
+            // 第二層 Subcategory
+            html += `
+                <li>
+                    <div class="toc-item sub" onclick="toggle(this)">
+                        ${sub.title[STATE.currentLang]} <span class="arrow">▼</span>
+                    </div>
+                    <ul class="toc-q hidden">
+            `;
+            
             sub.questions.forEach(q => {
-                html += `<li><a href="#${q.id}" class="toc-link" onclick="renderCurrentHash()" data-id="${q.id}">${q.title[STATE.currentLang]}</a></li>`;
+                // 第三層 Question
+                html += `
+                    <li>
+                        <a href="#${q.id}" class="toc-link" onclick="renderCurrentHash()" data-id="${q.id}">
+                            ${q.title[STATE.currentLang]}
+                        </a>
+                    </li>
+                `;
             });
             html += `</ul></li>`;
         });
         html += `</ul></li>`;
     });
     document.getElementById('sidebar-content').innerHTML = html+'</ul>';
+}
+
+// ✅ 恢復：收折切換函式
+function toggle(el) { 
+    const list = el.nextElementSibling;
+    if(list) {
+        list.classList.toggle('hidden');
+        el.classList.toggle('expanded'); // 控制箭頭旋轉樣式
+    }
+}
+
+// 高亮並自動展開目錄
+function highlightSidebar(id) {
+    document.querySelectorAll('.toc-link').forEach(el => el.classList.remove('active'));
+    const link = document.querySelector(`.toc-link[data-id="${id}"]`);
+    if(link) {
+        link.classList.add('active');
+        // 向上展開父層
+        let parent = link.closest('ul');
+        while(parent && !parent.classList.contains('toc-root')) {
+            if(parent.classList.contains('hidden')) {
+                parent.classList.remove('hidden');
+                if(parent.previousElementSibling) parent.previousElementSibling.classList.add('expanded');
+            }
+            parent = parent.parentElement.closest('ul');
+        }
+    }
 }
 
 function initSearch(nodes) {
@@ -225,44 +279,28 @@ function initSearch(nodes) {
 
 function handleSearch(val) {
     val = val.trim();
-    const links = document.querySelectorAll('.toc-link');
-    
     if(!val) {
         renderTOC(STATE.mergedData.categories); 
         return;
     }
     
+    const links = document.querySelectorAll('.toc-link');
     const res = STATE.fuse.search(val).map(r => r.item.id);
+    
     links.forEach(l => {
         const match = res.includes(l.getAttribute('data-id'));
-        const li = l.closest('li'); 
-        
-        if (match) {
+        const li = l.closest('li'); // Question 的 li
+        if(match) {
             li.style.display = '';
-            const subUl = li.closest('.toc-q');
-            if(subUl) {
-                subUl.classList.remove('hidden');
-                subUl.previousElementSibling.classList.add('expanded');
-                const catUl = subUl.closest('.toc-sub');
-                if(catUl) {
-                    catUl.classList.remove('hidden');
-                    catUl.previousElementSibling.classList.add('expanded');
-                }
+            // 搜尋命中時自動展開
+            let parent = li.closest('ul');
+            while(parent && !parent.classList.contains('toc-root')) {
+                parent.classList.remove('hidden');
+                if(parent.previousElementSibling) parent.previousElementSibling.classList.add('expanded');
+                parent = parent.parentElement.closest('ul');
             }
         } else {
             li.style.display = 'none';
         }
     });
-}
-
-function toggleSidebar() {
-    document.body.classList.toggle('sidebar-collapsed');
-}
-
-function toggle(el) {
-    const list = el.nextElementSibling;
-    if (list) {
-        list.classList.toggle('hidden');
-        el.classList.toggle('expanded');
-    }
 }
