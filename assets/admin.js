@@ -1,4 +1,4 @@
-// assets/admin.js - Full Version
+// assets/admin.js - Final Complete Version
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -191,7 +191,73 @@ async function saveGithubData(content) {
     }
 }
 
-// --- 編輯器邏輯 (完整版) ---
+// --- 圖片貼上邏輯 ---
+async function handleImagePaste(e) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    let blob = null;
+    for (let i=0; i<items.length; i++) {
+        if (items[i].type.indexOf("image") === 0) { blob = items[i].getAsFile(); break; }
+    }
+    if(!blob) return;
+    
+    e.preventDefault();
+    if(!confirm("偵測到圖片，確定上傳？")) return;
+
+    const filename = `img_${Date.now()}.png`;
+    const path = `assets/images/${filename}`;
+    
+    if(currentMode === 'local') {
+        if(!localHandle) return alert("請先連接資料夾");
+        try {
+            const imgDir = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('images'));
+            const fileHandle = await imgDir.getFileHandle(filename, {create:true});
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            insertText(e.target, `{{img:${path}}}`);
+            alert("圖片已存入本機");
+        } catch(err) { alert("圖片存檔失敗: "+err.message); }
+    } else {
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+            const base64 = reader.result.split(',')[1];
+            try {
+                await uploadImageToGithub(filename, base64);
+                insertText(e.target, `{{img:${path}}}`);
+                alert("圖片已上傳 GitHub");
+            } catch(err) { alert("圖片上傳失敗: "+err.message); }
+        };
+    }
+}
+
+async function uploadImageToGithub(filename, base64) {
+    const token = document.getElementById('gh_token').value;
+    const user = document.getElementById('gh_user').value;
+    const repo = document.getElementById('gh_repo').value;
+    const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/assets/images/${filename}`;
+    
+    const res = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: { 
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+            message: `Upload ${filename}`,
+            content: base64
+        })
+    });
+    if(!res.ok) throw new Error("API Error");
+}
+
+function insertText(el, text) {
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    el.value = el.value.substring(0, start) + text + el.value.substring(end);
+}
+
+// --- 編輯器邏輯 (UI) ---
 function parseAndRender(text) {
     const match = text.match(/window\.(\w+)\s*=\s*(\{[\s\S]*\});?/);
     if(match) {
@@ -299,7 +365,7 @@ function addNode(type) {
     } else if (type === 'q' && activeNode && activeNode.questions) {
         activeNode.questions.push({ id:`Q-${ts}`, title:"New", content:{symptoms:[],rootCauses:[],solutionSteps:[],notes:""} });
     } else {
-        return alert("請先選取正確的父層 (選分類->新增子類，選子類->新增問題)");
+        return alert("請先選取正確的父層");
     }
     renderTree();
 }
@@ -312,71 +378,4 @@ function deleteNode() {
         document.getElementById('editor-panel').style.display = 'none';
         renderTree();
     }
-}
-
-// 圖片貼上處理
-async function handleImagePaste(e) {
-    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-    let blob = null;
-    for (let i=0; i<items.length; i++) {
-        if (items[i].type.indexOf("image") === 0) { blob = items[i].getAsFile(); break; }
-    }
-    if(!blob) return;
-    
-    e.preventDefault();
-    if(!confirm("偵測到圖片，確定上傳？")) return;
-
-    const filename = `img_${Date.now()}.png`;
-    const path = `assets/images/${filename}`;
-    
-    if(currentMode === 'local') {
-        if(!localHandle) return alert("請先連接資料夾");
-        try {
-            const imgDir = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('images'));
-            const fileHandle = await imgDir.getFileHandle(filename, {create:true});
-            const writable = await fileHandle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-            insertText(e.target, `{{img:${path}}}`);
-            alert("圖片已存入本機");
-        } catch(err) { alert("圖片存檔失敗: "+err.message); }
-    } else {
-        // GitHub 上傳圖片
-        const reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-            const base64 = reader.result.split(',')[1];
-            try {
-                await uploadImageToGithub(filename, base64);
-                insertText(e.target, `{{img:${path}}}`);
-                alert("圖片已上傳 GitHub");
-            } catch(err) { alert("圖片上傳失敗: "+err.message); }
-        };
-    }
-}
-
-async function uploadImageToGithub(filename, base64) {
-    const token = document.getElementById('gh_token').value;
-    const user = document.getElementById('gh_user').value;
-    const repo = document.getElementById('gh_repo').value;
-    const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/assets/images/${filename}`;
-    
-    const res = await fetch(apiUrl, {
-        method: 'PUT',
-        headers: { 
-            'Authorization': `token ${token}`,
-            'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({
-            message: `Upload ${filename}`,
-            content: base64
-        })
-    });
-    if(!res.ok) throw new Error("API Error");
-}
-
-function insertText(el, text) {
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    el.value = el.value.substring(0, start) + text + el.value.substring(end);
 }
