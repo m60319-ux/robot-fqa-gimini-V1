@@ -1,54 +1,137 @@
+// assets/admin.js - Final Fixed Version
+
+// 全域變數
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
 let currentLang = "zh";
 let activeNode = null;
+let activeParent = null; // 用於刪除
 let localHandle = null;
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     loadGhConfig();
+    // 監聽貼上圖片
     document.querySelectorAll('.paste-area').forEach(area => {
         area.addEventListener('paste', handleImagePaste);
     });
 });
 
-// --- 模式與設定 ---
+// =========================================
+// 1. 模式與設定 UI
+// =========================================
 function switchMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
     
-    // UI切換
-    const idx = mode==='local'?0:1;
+    // UI 切換
+    const idx = mode === 'local' ? 0 : 1;
     document.querySelectorAll('.tab-btn')[idx].classList.add('active');
     document.getElementById(`panel-${mode}`).classList.add('active');
     
     const btn = document.getElementById('saveGithubBtn');
-    btn.innerText = mode==='local' ? "💾 儲存 (本機硬碟)" : "🚀 儲存並上傳 GitHub";
-    btn.className = mode==='local' ? "btn-green" : "btn-blue";
+    btn.innerText = mode === 'local' ? "💾 儲存 (本機硬碟)" : "🚀 儲存並上傳 GitHub";
+    btn.className = mode === 'local' ? "btn-green" : "btn-blue";
 }
 
 function loadGhConfig() {
     const conf = JSON.parse(localStorage.getItem('gh_config'));
     if(conf) {
-        document.getElementById('gh_token').value = conf.token;
-        document.getElementById('gh_user').value = conf.user;
-        document.getElementById('gh_repo').value = conf.repo;
+        document.getElementById('gh_token').value = conf.token || '';
+        document.getElementById('gh_user').value = conf.user || '';
+        document.getElementById('gh_repo').value = conf.repo || '';
     }
 }
 
 function saveGhConfig() {
-    const token = document.getElementById('gh_token').value;
-    const user = document.getElementById('gh_user').value;
-    const repo = document.getElementById('gh_repo').value;
+    const token = document.getElementById('gh_token').value.trim();
+    const user = document.getElementById('gh_user').value.trim();
+    const repo = document.getElementById('gh_repo').value.trim();
+    
+    if(!token || !user || !repo) return alert("請填寫完整資訊");
+    
     localStorage.setItem('gh_config', JSON.stringify({token, user, repo}));
     alert("設定已儲存");
 }
 
-// --- 核心：儲存資料 (分流) ---
+// =========================================
+// 2. 檔案載入 (Local & GitHub)
+// =========================================
+
+// 本機載入
+async function connectLocalFolder() {
+    if (!('showDirectoryPicker' in window)) return alert("瀏覽器不支援，請用 Chrome/Edge");
+    try {
+        localHandle = await window.showDirectoryPicker();
+        // 檢查是否選對資料夾
+        await localHandle.getDirectoryHandle('assets');
+        document.getElementById('local-status').innerText = "✅ 已連接";
+        document.getElementById('local-status').className = "status-tag status-ok";
+        document.getElementById('local-status').style.display = "inline-block";
+    } catch(e) { 
+        alert("連接失敗或選錯資料夾 (需包含 assets): " + e.message); 
+    }
+}
+
+async function loadLocalFile(lang) {
+    if(!localHandle) return alert("請先連接資料夾");
+    try {
+        currentLang = lang;
+        const fileHandle = await localHandle.getDirectoryHandle('assets')
+                                          .then(d => d.getDirectoryHandle('data'))
+                                          .then(d => d.getFileHandle(`data.${lang}.js`));
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        parseAndRender(text);
+        alert(`已載入 data.${lang}.js`);
+    } catch(e) {
+        alert("讀取失敗: " + e.message);
+    }
+}
+
+// ✅ 補回遺失的 GitHub 載入函式
+async function loadGithubFile(lang) {
+    const token = document.getElementById('gh_token').value.trim();
+    const user = document.getElementById('gh_user').value.trim();
+    const repo = document.getElementById('gh_repo').value.trim();
+
+    if (!token || !user || !repo) return alert("請先設定 GitHub 資訊");
+
+    currentLang = lang;
+    const path = `assets/data/data.${lang}.js`;
+    const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+
+    try {
+        const res = await fetch(apiUrl, {
+            headers: { 
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        });
+        
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const data = await res.json();
+        // GitHub API 回傳的是 Base64，需解碼 (支援中文)
+        const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
+        
+        parseAndRender(content);
+        alert(`✅ 從 GitHub 載入成功 (data.${lang}.js)`);
+        
+    } catch (e) {
+        alert("GitHub 讀取失敗: " + e.message);
+    }
+}
+
+// =========================================
+// 3. 儲存邏輯 (Save)
+// =========================================
 async function saveData() {
-    if(!currentData) return alert("無資料");
+    if(!currentData) return alert("沒有資料可存");
+    
+    // 轉成 JS 字串
     const str = JSON.stringify(currentData, null, 4);
     const content = `window.${currentVarName} = ${str};`;
 
@@ -59,18 +142,30 @@ async function saveData() {
     }
 }
 
-// --- GitHub 上傳邏輯 (修復版) ---
+async function saveLocalData(content) {
+    if(!localHandle) return alert("請先連接資料夾");
+    try {
+        const fileHandle = await localHandle.getDirectoryHandle('assets')
+                                          .then(d => d.getDirectoryHandle('data'))
+                                          .then(d => d.getFileHandle(`data.${currentLang}.js`, {create: true}));
+        const writable = await fileHandle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        alert(`✅ 本機存檔成功 (data.${currentLang}.js)`);
+    } catch(e) {
+        alert("存檔失敗: " + e.message);
+    }
+}
+
 async function saveGithubData(content) {
     const saveBtn = document.getElementById('saveGithubBtn');
-    
-    // ⚠️ 關鍵修正 1: 定義 oldText
-    const oldText = saveBtn.innerText;
+    const oldText = saveBtn.innerText; // 記住按鈕文字
     
     const token = document.getElementById('gh_token').value.trim();
     const user = document.getElementById('gh_user').value.trim();
     const repo = document.getElementById('gh_repo').value.trim();
 
-    if (!token || !user || !repo) return alert('請先設定 GitHub Token！');
+    if (!token || !user || !repo) return alert('請先設定 GitHub！');
 
     saveBtn.disabled = true;
     saveBtn.innerText = '⏳ 取得 SHA...';
@@ -78,23 +173,26 @@ async function saveGithubData(content) {
     try {
         const path = `assets/data/data.${currentLang}.js`;
         const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-        const headers = { 'Authorization': `token ${token}` };
+        const headers = { 
+            'Authorization': `token ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+        };
 
-        // Step 1: GET SHA
+        // 1. GET SHA
         const getRes = await fetch(apiUrl, { headers });
-        if(!getRes.ok) throw new Error("無法讀取檔案 SHA");
+        if(!getRes.ok) throw new Error("無法取得檔案狀態 (可能檔案不存在或 Repo 設定錯誤)");
         const fileData = await getRes.json();
 
-        // Step 2: PUT Update
+        // 2. PUT Update
         saveBtn.innerText = '⏳ 上傳中...';
-        // 中文編碼處理
+        // 解決中文亂碼的 Base64 編碼
         const encodedContent = btoa(unescape(encodeURIComponent(content)));
         
         const putRes = await fetch(apiUrl, {
             method: 'PUT',
             headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                message: 'Update via Admin',
+                message: 'Update via Admin Panel',
                 content: encodedContent,
                 sha: fileData.sha
             })
@@ -102,50 +200,150 @@ async function saveGithubData(content) {
 
         if(!putRes.ok) throw new Error("上傳失敗");
         
-        alert('🎉 成功！資料已更新到 GitHub (請等1分鐘後刷新)');
+        alert('🎉 成功！GitHub 已更新 (請稍等 1-2 分鐘生效)');
 
     } catch (e) {
-        alert('錯誤: ' + e.message);
+        console.error(e);
+        alert('❌ 錯誤: ' + e.message);
     } finally {
-        // ⚠️ 關鍵修正 2: 恢復按鈕
         saveBtn.disabled = false;
         saveBtn.innerText = oldText;
     }
 }
 
-// --- 本機邏輯 (Local) ---
-async function connectLocalFolder() {
-    try {
-        localHandle = await window.showDirectoryPicker();
-        document.getElementById('local-status').innerText = "✅ 已連接";
-        document.getElementById('local-status').className = "status-tag status-ok";
-    } catch(e) { console.log(e); }
+// =========================================
+// 4. 編輯器與樹狀圖邏輯
+// =========================================
+function parseAndRender(text) {
+    // 解析 JS 檔: window.XXX = { ... };
+    const match = text.match(/window\.(\w+)\s*=\s*(\{[\s\S]*\});?/);
+    if(match) {
+        currentVarName = match[1];
+        try {
+            currentData = JSON.parse(match[2]);
+            renderTree();
+            document.getElementById('editor-panel').style.display = 'none';
+            document.getElementById('welcome-msg').style.display = 'none';
+        } catch(e) {
+            alert("資料格式錯誤 (JSON Parse Error)");
+        }
+    } else {
+        alert("檔案格式不符 (找不到 window.FAQ_DATA_...)");
+    }
 }
 
-async function loadLocalFile(lang) {
-    if(!localHandle) return alert("請先連接資料夾");
-    currentLang = lang;
-    const fileHandle = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('data')).then(d=>d.getFileHandle(`data.${lang}.js`));
-    const file = await fileHandle.getFile();
-    const text = await file.text();
-    parseData(text);
+function renderTree() {
+    const root = document.getElementById('tree-root');
+    root.innerHTML = '';
+    if(!currentData.categories) currentData.categories = [];
+
+    currentData.categories.forEach((cat, i) => {
+        root.appendChild(createNode(cat, `📁 ${cat.title||cat.id}`, 'cat', currentData.categories, i));
+        if(cat.subcategories) {
+            cat.subcategories.forEach((sub, j) => {
+                root.appendChild(createNode(sub, `　📂 ${sub.title||sub.id}`, 'sub', cat.subcategories, j));
+                if(sub.questions) {
+                    sub.questions.forEach((q, k) => {
+                        root.appendChild(createNode(q, `　　❓ ${q.title||q.id}`, 'q', sub.questions, k));
+                    });
+                }
+            });
+        }
+    });
 }
 
-async function saveLocalData(content) {
-    if(!localHandle) return alert("請先連接資料夾");
-    const fileHandle = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('data')).then(d=>d.getFileHandle(`data.${currentLang}.js`));
-    const writable = await fileHandle.createWritable();
-    await writable.write(content);
-    await writable.close();
-    alert("✅ 本機存檔成功");
+function createNode(item, label, type, arr, idx) {
+    const div = document.createElement('div');
+    div.className = 'tree-item';
+    if(activeNode === item) div.classList.add('active');
+    div.textContent = label;
+    div.onclick = (e) => {
+        e.stopPropagation();
+        loadEditor(item, type, arr, idx);
+    };
+    return div;
 }
 
-// --- 圖片貼上邏輯 ---
+function loadEditor(item, type, arr, idx) {
+    activeNode = item;
+    activeParent = { array: arr, index: idx };
+    
+    // UI Highlight
+    document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+    renderTree(); // 這裡簡單重繪來更新 highlight
+
+    document.getElementById('editor-panel').style.display = 'block';
+    document.getElementById('node-type').textContent = type.toUpperCase();
+    
+    document.getElementById('inp-id').value = item.id || '';
+    document.getElementById('inp-title').value = item.title || '';
+    
+    const qDiv = document.getElementById('q-fields');
+    if(type === 'q') {
+        qDiv.style.display = 'block';
+        const c = item.content || {};
+        const join = (a) => Array.isArray(a) ? a.join('\n') : (a || "");
+        
+        document.getElementById('inp-symptoms').value = join(c.symptoms);
+        document.getElementById('inp-causes').value = join(c.rootCauses);
+        document.getElementById('inp-steps').value = join(c.solutionSteps);
+        document.getElementById('inp-notes').value = c.notes || "";
+    } else {
+        qDiv.style.display = 'none';
+    }
+}
+
+function applyEdit() {
+    if(!activeNode) return;
+    activeNode.id = document.getElementById('inp-id').value;
+    activeNode.title = document.getElementById('inp-title').value;
+    
+    if(document.getElementById('q-fields').style.display === 'block') {
+        if(!activeNode.content) activeNode.content = {};
+        const split = (id) => document.getElementById(id).value.split('\n').filter(x=>x.trim());
+        
+        activeNode.content.symptoms = split('inp-symptoms');
+        activeNode.content.rootCauses = split('inp-causes');
+        activeNode.content.solutionSteps = split('inp-steps');
+        activeNode.content.notes = document.getElementById('inp-notes').value;
+    }
+    
+    renderTree();
+    alert("修改已暫存 (請記得下載/上傳)");
+}
+
+function addNode(type) {
+    if(!currentData) return alert("請先載入檔案");
+    const ts = Date.now().toString().slice(-4);
+    
+    if(type === 'cat') {
+        currentData.categories.push({ id:`CAT-${ts}`, title:"New", subcategories:[] });
+    } else if (type === 'sub' && activeNode && activeNode.subcategories) {
+        activeNode.subcategories.push({ id:`SUB-${ts}`, title:"New", questions:[] });
+    } else if (type === 'q' && activeNode && activeNode.questions) {
+        activeNode.questions.push({ id:`Q-${ts}`, title:"New", content:{symptoms:[],rootCauses:[],solutionSteps:[],notes:""} });
+    } else {
+        return alert("請先選取正確的父層 (選分類->新增子類，選子類->新增問題)");
+    }
+    renderTree();
+}
+
+function deleteNode() {
+    if(!activeNode || !activeParent) return alert("請先選擇項目");
+    if(confirm("確定刪除？")) {
+        activeParent.array.splice(activeParent.index, 1);
+        activeNode = null;
+        document.getElementById('editor-panel').style.display = 'none';
+        renderTree();
+    }
+}
+
+// 圖片貼上處理
 async function handleImagePaste(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
     let blob = null;
     for (let i=0; i<items.length; i++) {
-        if (items[i].type.indexOf("image")===0) { blob = items[i].getAsFile(); break; }
+        if (items[i].type.indexOf("image") === 0) { blob = items[i].getAsFile(); break; }
     }
     if(!blob) return;
     
@@ -156,27 +354,50 @@ async function handleImagePaste(e) {
     const path = `assets/images/${filename}`;
     
     if(currentMode === 'local') {
-        // 本機儲存圖片
         if(!localHandle) return alert("請先連接資料夾");
-        const imgDir = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('images'));
-        const fileHandle = await imgDir.getFileHandle(filename, {create:true});
-        const writable = await fileHandle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-        insertText(e.target, `{{img:${path}}}`);
+        try {
+            const imgDir = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('images'));
+            const fileHandle = await imgDir.getFileHandle(filename, {create:true});
+            const writable = await fileHandle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            insertText(e.target, `{{img:${path}}}`);
+            alert("圖片已存入本機");
+        } catch(err) { alert("圖片存檔失敗: "+err.message); }
     } else {
         // GitHub 上傳圖片
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
             const base64 = reader.result.split(',')[1];
-            // 這裡簡化：直接呼叫上傳圖片 API (需實作類似 saveGithubData 的邏輯)
-            // 為了完整性，這裡假設您會實作 saveGithubImage
-            alert("GitHub 圖片上傳需實作 saveGithubImage 函式 (類似 saveGithubData)");
-            // 暫時只插入文字
-            insertText(e.target, `{{img:${path}}}`);
+            // 呼叫上傳
+            try {
+                await uploadImageToGithub(filename, base64);
+                insertText(e.target, `{{img:${path}}}`);
+                alert("圖片已上傳 GitHub");
+            } catch(err) { alert("圖片上傳失敗: "+err.message); }
         };
     }
+}
+
+async function uploadImageToGithub(filename, base64) {
+    const token = document.getElementById('gh_token').value;
+    const user = document.getElementById('gh_user').value;
+    const repo = document.getElementById('gh_repo').value;
+    const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/assets/images/${filename}`;
+    
+    const res = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: { 
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+            message: `Upload ${filename}`,
+            content: base64
+        })
+    });
+    if(!res.ok) throw new Error("API Error");
 }
 
 function insertText(el, text) {
@@ -184,24 +405,3 @@ function insertText(el, text) {
     const end = el.selectionEnd;
     el.value = el.value.substring(0, start) + text + el.value.substring(end);
 }
-
-// --- 通用 Helper ---
-function parseData(text) {
-    const match = text.match(/window\.(\w+)\s*=\s*(\{[\s\S]*\});?/);
-    if(match) {
-        currentVarName = match[1];
-        try {
-            currentData = JSON.parse(match[2]);
-            renderTree();
-            document.getElementById('editor-panel').style.display='none';
-        } catch(e) { alert("JSON 格式錯誤"); }
-    }
-}
-
-// 樹狀圖渲染與編輯邏輯 (addNode, deleteNode, applyEdit) 請保持原樣
-// 為了節省篇幅，這裡省略這部分標準代碼，請保留您原本的即可
-function renderTree() { /*...省略...*/ }
-function loadEditor(item, type, arr, idx) { /*...省略...*/ }
-function applyEdit() { /*...省略...*/ }
-function addNode(type) { /*...省略...*/ }
-function deleteNode() { /*...省略...*/ }
