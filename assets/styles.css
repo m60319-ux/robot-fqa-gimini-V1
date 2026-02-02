@@ -7,7 +7,46 @@ aside { width: 320px; background: #fff; border-right: 1px solid #ddd; display: f
 #sidebar-content, #tree-wrapper { flex: 1; overflow-y: auto; }
 
 /* 後台專用 */
-.mode-tabs { display: flex; border-bottom: 1px solid #ddd; }
+/* TOC 目錄樣式 (修改) */
+.toc-item { 
+    padding: 10px 15px; 
+    cursor: pointer; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    font-weight: 500;
+    user-select: none; /* 防止連點選取文字 */
+    transition: background 0.2s;
+}
+.toc-item:hover { background: #f0f0f0; }
+
+.toc-item.cat { font-weight: bold; background: #f8f9fa; border-bottom: 1px solid #eee; }
+.toc-item.sub { padding-left: 25px; color: #555; border-bottom: 1px solid #f9f9f9; }
+
+/* 隱藏類別 (用於收折) */
+.hidden { display: none; }
+
+/* 箭頭動畫 */
+.arrow { 
+    transition: transform 0.3s ease; 
+    font-size: 0.8em; 
+    color: #999;
+}
+/* 當父層沒有 hidden class 時 (展開狀態)，箭頭旋轉 */
+.toc-item.expanded .arrow { transform: rotate(180deg); }
+
+/* 連結樣式 */
+.toc-link { 
+    display: block; 
+    padding: 8px 15px 8px 40px; 
+    text-decoration: none; 
+    color: #666; 
+    font-size: 0.9em; 
+    border-left: 3px solid transparent; 
+}
+.toc-link:hover { color: #007bff; background: #eef; }
+.toc-link.active { color: #007bff; background: #eef; font-weight: bold; border-left: 3px solid #007bff; }
+
 .tab-btn { flex: 1; padding: 10px; border:none; background:#f1f1f1; cursor:pointer; }
 .tab-btn.active { background:#fff; color:#0066cc; border-bottom:2px solid #0066cc; font-weight:bold; }
 .mode-panel { padding: 15px; background: #f9fbff; display: none; }
