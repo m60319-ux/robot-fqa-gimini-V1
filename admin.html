@@ -4,25 +4,21 @@
     <meta charset="UTF-8">
     <title>FAQ 雙模組編輯器</title>
     <link rel="stylesheet" href="assets/styles.css">
-    <!-- 消除 favicon 404 -->
     <link rel="icon" href="data:,">
     <script src="assets/libs/papaparse.min.js"></script>
 </head>
 <body>
 
     <aside id="admin-sidebar">
-        <!-- 頂部導覽 -->
         <div style="padding: 10px; background:#f8f9fa; border-bottom:1px solid #ddd;">
             <a href="index.html" class="btn-back">⬅ 返回首頁</a>
         </div>
 
-        <!-- 模式切換 -->
         <div class="mode-tabs">
             <button class="tab-btn active" onclick="switchMode('local')">🏠 本機離線</button>
             <button class="tab-btn" onclick="switchMode('github')">☁️ GitHub 線上</button>
         </div>
 
-        <!-- 本機面板 -->
         <div id="panel-local" class="mode-panel active">
             <button class="btn-blue" style="width:100%" onclick="connectLocalFolder()">📁 連接資料夾</button>
             <div id="local-status" class="status-tag status-err" style="display:none">未連接</div>
@@ -30,13 +26,12 @@
             <label>載入檔案</label>
             <div class="btn-group">
                 <button onclick="loadLocalFile('zh')">繁中</button>
-                <button onclick="loadLocalFile('cn')">簡中</button>
                 <button onclick="loadLocalFile('en')">EN</button>
-                <button onclick="loadLocalFile('th')">泰文</button>
+                <button onclick="loadLocalFile('cn')">CN</button>
+                <button onclick="loadLocalFile('th')">TH</button>
             </div>
         </div>
 
-        <!-- GitHub 面板 (⚠️重點：ID 必須對應 admin.js) -->
         <div id="panel-github" class="mode-panel">
             <input type="password" id="gh_token" placeholder="Token (ghp_...)" style="font-size:12px;">
             <div style="display:flex; gap:5px;">
@@ -48,20 +43,18 @@
             <label>從 GitHub 載入</label>
             <div class="btn-group">
                 <button onclick="loadGithubFile('zh')">繁中</button>
-                <button onclick="loadGithubFile('cn')">簡中</button>
                 <button onclick="loadGithubFile('en')">EN</button>
-                <button onclick="loadGithubFile('th')">泰文</button>
+                <button onclick="loadGithubFile('cn')">CN</button>
+                <button onclick="loadGithubFile('th')">TH</button>
             </div>
         </div>
 
-        <!-- 儲存按鈕 -->
         <div style="padding: 10px;">
             <button id="saveGithubBtn" class="btn-green" style="width:100%; padding:10px;" onclick="saveData()">
                 💾 儲存變更
             </button>
         </div>
 
-        <!-- 樹狀圖 -->
         <div class="toolbar">
             <button onclick="addNode('cat')">+分類</button>
             <button onclick="addNode('sub')">+子類</button>
