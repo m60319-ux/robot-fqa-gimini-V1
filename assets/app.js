@@ -1,3 +1,4 @@
+// assets/app.js - Auto Cache Busting Version
 const STATE = { mergedData: null, fuse: null, currentLang: 'zh' };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,17 +16,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     initLightbox();
-    initApp();
+
+    // 🚀 新增：動態載入資料 (自動破除快取)
+    // 這會確保每次重新整理都抓到最新的 data.js
+    loadDataScripts().then(() => {
+        initApp();
+    });
 });
+
+// 🚀 核心功能：動態插入 script 標籤並加上時間戳記
+function loadDataScripts() {
+    const langs = ['zh', 'cn', 'en', 'th'];
+    const version = new Date().getTime(); // 使用當下時間作為版本號，保證最新
+    
+    console.log(`[App] Loading data with version: ${version}`);
+
+    const promises = langs.map(lang => {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            // 關鍵：加上 ?v=... 參數
+            script.src = `assets/data/data.${lang}.js?v=${version}`;
+            script.onload = () => {
+                console.log(`[App] Loaded data.${lang}.js`);
+                resolve();
+            };
+            script.onerror = () => {
+                console.warn(`[App] Failed to load data.${lang}.js (File might not exist yet)`);
+                resolve(); // 失敗也繼續，避免卡死整個 App
+            };
+            document.body.appendChild(script);
+        });
+    });
+
+    return Promise.all(promises);
+}
 
 function initApp() {
     const dataMap = {
-        zh: window.FAQ_DATA_ZH, "zh-CN": window.FAQ_DATA_CN,
-        en: window.FAQ_DATA_EN, th: window.FAQ_DATA_TH
+        zh: window.FAQ_DATA_ZH, 
+        "zh-CN": window.FAQ_DATA_CN,
+        en: window.FAQ_DATA_EN, 
+        th: window.FAQ_DATA_TH
     };
 
-    if (!dataMap.zh) {
-        document.getElementById('main-content').innerHTML = "錯誤：找不到資料檔";
+    // 檢查是否有載入任何資料
+    const base = dataMap.zh || dataMap.en || dataMap["zh-CN"] || dataMap.th;
+    
+    if (!base) {
+        document.getElementById('main-content').innerHTML = `
+            <div style="text-align:center; padding:50px; color:#666;">
+                <h3>⚠️ 無法讀取資料</h3>
+                <p>請檢查 data.zh.js 是否存在，或 GitHub Pages 是否已部署完成。</p>
+            </div>`;
         return;
     }
 
@@ -92,6 +134,7 @@ function findNode(nodes, id, level) {
     return null;
 }
 
+// Lightbox
 function initLightbox() {
     const lightbox = document.createElement('div');
     lightbox.id = 'lightbox';
@@ -114,6 +157,7 @@ function openLightbox(src) {
     lb.classList.add('active');
 }
 
+// 圖片解析
 function parseContent(text) {
     if (!text) return "";
     let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
