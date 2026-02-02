@@ -1,3 +1,4 @@
+// assets/app.js - Full Version
 const STATE = { mergedData: null, fuse: null, currentLang: 'zh' };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = url.toString();
         });
     }
+    
+    // 初始化 Lightbox
+    initLightbox();
     initApp();
 });
 
@@ -22,8 +26,16 @@ function initApp() {
         en: window.FAQ_DATA_EN, th: window.FAQ_DATA_TH
     };
 
+    // 容錯檢查
     if (!dataMap.zh) {
-        document.getElementById('main-content').innerHTML = "錯誤：找不到資料檔 (請確認 data.zh.js 是否載入)";
+        console.warn('data.zh.js not loaded');
+        // 嘗試用其他語言當骨幹
+    }
+
+    // 至少要有一個語言檔
+    const base = dataMap.zh || dataMap.en || dataMap["zh-CN"] || dataMap.th;
+    if(!base) {
+        document.getElementById('main-content').innerHTML = "錯誤：未載入任何資料檔";
         return;
     }
 
@@ -43,9 +55,10 @@ function initApp() {
     renderCurrentHash();
 }
 
-// 核心：多語系合併
+// 多語系合併
 function mergeData(map) {
-    const base = map.zh;
+    // 找一個存在的當基準
+    const base = map.zh || map.en || map["zh-CN"] || map.th;
     const categories = JSON.parse(JSON.stringify(base.categories));
     
     const mergeNode = (nodes, level) => {
@@ -60,7 +73,7 @@ function mergeData(map) {
                         node.content = node.content || {};
                         ['symptoms','rootCauses','solutionSteps','notes'].forEach(k => {
                             if(!node.content[k]) node.content[k]={};
-                            if(Array.isArray(node.content[k])) node.content[k]={}; // 修正舊格式
+                            if(Array.isArray(node.content[k])) node.content[k]={};
                             node.content[k][lang] = found.content?.[k];
                         });
                     }
@@ -91,13 +104,35 @@ function findNode(nodes, id, level) {
     return null;
 }
 
-// ⚠️ 重點：圖片解析器
+// Lightbox
+function initLightbox() {
+    const lightbox = document.createElement('div');
+    lightbox.id = 'lightbox';
+    lightbox.innerHTML = `<span id="lightbox-close">&times;</span><img id="lightbox-img" src="">`;
+    document.body.appendChild(lightbox);
+
+    const closeBtn = document.getElementById('lightbox-close');
+    const img = document.getElementById('lightbox-img');
+    const close = () => { lightbox.classList.remove('active'); img.src=''; };
+
+    closeBtn.onclick = close;
+    lightbox.onclick = (e) => { if(e.target===lightbox) close(); };
+    document.onkeydown = (e) => { if(e.key==='Escape') close(); };
+}
+
+function openLightbox(src) {
+    const lb = document.getElementById('lightbox');
+    const img = document.getElementById('lightbox-img');
+    img.src = src;
+    lb.classList.add('active');
+}
+
+// 圖片解析
 function parseContent(text) {
     if (!text) return "";
     let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    // 解析 {{img:路徑}}
     return safeText.replace(/\{\{img:([^}]+)\}\}/g, (match, src) => {
-        return `<div class="img-container"><img src="${src}" onclick="window.open(this.src,'_blank')" title="點擊放大"></div>`;
+        return `<div class="img-container"><img src="${src}" onclick="openLightbox('${src}')" title="點擊放大"></div>`;
     });
 }
 
@@ -143,6 +178,36 @@ function renderTOC(nodes) {
     document.getElementById('sidebar-content').innerHTML = html+'</ul>';
 }
 
-function initSearch(nodes) {/* 省略，保持原樣 */ }
-function handleSearch(val) {/* 省略，保持原樣 */ }
+function initSearch(nodes) {
+    if (typeof Fuse === 'undefined') return;
+    const list = [];
+    nodes.forEach(cat => {
+        cat.subcategories.forEach(sub => {
+            sub.questions.forEach(q => {
+                list.push({
+                    id: q.id,
+                    title: Object.values(q.title || {}).join(' '), 
+                    content: JSON.stringify(q.content || {})
+                });
+            });
+        });
+    });
+    STATE.fuse = new Fuse(list, { keys: ['id', 'title', 'content'], threshold: 0.3 });
+}
+
+function handleSearch(val) {
+    val = val.trim();
+    const links = document.querySelectorAll('.toc-link');
+    if(!val) {
+        links.forEach(l => l.closest('li').style.display = '');
+        return;
+    }
+    const res = STATE.fuse.search(val).map(r => r.item.id);
+    links.forEach(l => {
+        const match = res.includes(l.getAttribute('data-id'));
+        l.closest('li').style.display = match ? '' : 'none';
+        if(match) l.closest('.toc-sub').classList.remove('hidden');
+    });
+}
+
 function toggle(el) { el.nextElementSibling.classList.toggle('hidden'); }
