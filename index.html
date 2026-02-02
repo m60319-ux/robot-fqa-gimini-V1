@@ -5,38 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robot FAQ System</title>
     <link rel="stylesheet" href="assets/styles.css">
-    <!-- 消除 favicon 404 錯誤 -->
     <link rel="icon" href="data:,">
     
     <!-- 1. 載入第三方庫 (搜尋引擎) -->
     <script src="assets/libs/fuse.min.js"></script>
 </head>
-<body class="sidebar-collapsed">
-
-    <!-- 切換按鈕 -->
-    <button id="toggle-btn" onclick="toggleSidebar()">
-        <span class="icon">☰</span> <span class="text">目錄</span>
-    </button>
+<body>
 
     <aside id="sidebar">
-        <div class="sidebar-content-wrapper">
-            <div class="sidebar-header">
-                <!-- 後台入口按鈕 -->
-                <div class="admin-entry">
-                    <a href="admin.html" class="btn-admin">⚙️ 進入管理後台</a>
-                </div>
-
-                <select id="lang-select">
-                    <option value="zh">繁體中文</option>
-                    <option value="zh-CN">简体中文</option>
-                    <option value="en">English</option>
-                    <option value="th">ไทย</option>
-                </select>
-                <input type="text" id="search-input" placeholder="搜尋關鍵字...">
+        <div class="sidebar-header">
+            <!-- 後台入口按鈕 -->
+            <div class="admin-entry">
+                <a href="admin.html" class="btn-admin">⚙️ 進入管理後台</a>
             </div>
-            <div id="error-message"></div>
-            <nav id="sidebar-content"></nav>
+
+            <select id="lang-select">
+                <option value="zh">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+                <option value="th">ไทย</option>
+            </select>
+            <input type="text" id="search-input" placeholder="搜尋關鍵字...">
         </div>
+        <div id="error-message"></div>
+        <nav id="sidebar-content"></nav>
     </aside>
 
     <main id="main-content">
@@ -46,7 +38,8 @@
         </div>
     </main>
 
-    <!-- ⚠️ 修改處：移除了 data.xx.js 的引用，現在全部交給 app.js 自動載入 -->
+    <!-- ⚠️ 修改處：原本在這裡的 4 行 data.xx.js 已經被移除 -->
+    <!-- 現在全部交由 app.js 自動載入，以確保資料永遠最新 -->
     
     <!-- 3. 載入前台邏輯 -->
     <script src="assets/app.js"></script>
