@@ -27,7 +27,10 @@ window.FAQ_DATA_EN = {
                                     "Replace fuse",
                                     "{{img:assets/images/img_1769763514401.png}}"
                                 ],
-                                "notes": "Safety first\n{{img:assets/images/img_1769763517692.png}}"
+                                "notes": "Safety first\n{{img:assets/images/img_1769763517692.png}}",
+                                "keywords": [
+                                    "AL001"
+                                ]
                             }
                         }
                     ]
