@@ -27,7 +27,10 @@ window.FAQ_DATA_TH = {
                                     "เปลี่ยนฟิวส์",
                                     "{{img:assets/images/img_1769763514401.png}}"
                                 ],
-                                "notes": "ระวังความปลอดภัย\n{{img:assets/images/img_1769763517692.png}}"
+                                "notes": "ระวังความปลอดภัย\n{{img:assets/images/img_1769763517692.png}}",
+                                "keywords": [
+                                    "AL001"
+                                ]
                             }
                         }
                     ]
@@ -55,7 +58,10 @@ window.FAQ_DATA_TH = {
                                 "solutionSteps": [
                                     "321"
                                 ],
-                                "notes": "321"
+                                "notes": "321",
+                                "keywords": [
+                                    "AL001"
+                                ]
                             }
                         }
                     ]
