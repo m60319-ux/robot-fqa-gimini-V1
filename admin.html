@@ -4,144 +4,87 @@
     <meta charset="UTF-8">
     <title>FAQ 雙模組編輯器</title>
     <link rel="stylesheet" href="assets/styles.css">
+    <!-- 消除 favicon 404 -->
+    <link rel="icon" href="data:,">
     <script src="assets/libs/papaparse.min.js"></script>
-    <style>
-        /* 基礎樣式沿用，新增後台專用樣式 */
-        body { display: flex; height: 100vh; background: #f0f0f0; overflow: hidden; }
-        #admin-sidebar { width: 340px; background: white; border-right: 1px solid #ccc; display: flex; flex-direction: column; }
-        #tree-wrapper { flex: 1; overflow-y: auto; padding: 10px; }
-        
-        /* 模式切換 Tabs */
-        .mode-tabs { display: flex; border-bottom: 1px solid #ddd; }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: #f1f1f1; cursor: pointer; font-weight: bold; color: #666; }
-        .tab-btn.active { background: #fff; color: #0066cc; border-bottom: 2px solid #0066cc; }
-        
-        /* 模式面板 */
-        .mode-panel { padding: 15px; background: #f9fbff; border-bottom: 1px solid #eee; display: none; }
-        .mode-panel.active { display: block; }
-
-        .toolbar { padding: 10px; background: #e9ecef; border-bottom: 1px solid #ddd; display: flex; gap: 5px; }
-        .toolbar button { font-size: 12px; padding: 5px 8px; cursor: pointer; }
-        
-        #admin-main { flex: 1; padding: 20px; overflow-y: auto; }
-        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        textarea { min-height: 80px; font-family: monospace; width: 100%; margin-bottom: 10px; }
-        input { width: 100%; margin-bottom: 10px; padding: 5px; }
-        label { font-weight: bold; display: block; margin-top: 10px; color: #555; }
-        .hint { font-size: 0.8em; color: #666; background: #fff3cd; padding: 5px; border-radius: 4px; }
-        
-        .tree-item { padding: 5px; cursor: pointer; border-bottom: 1px solid #eee; }
-        .tree-item.active { background-color: #007bff; color: white; }
-        
-        .status-tag { font-size: 12px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 5px; }
-        .status-ok { background: #d4edda; color: #155724; }
-        .status-err { background: #f8d7da; color: #721c24; }
-    </style>
 </head>
 <body>
 
     <aside id="admin-sidebar">
-        <div class="admin-header">
-            <div class="header-left">
-                <a href="index.html" class="btn-back">⬅ 返回首頁</a>
-                <h2>FAQ 管理後台</h2>
-            </div>
+        <!-- 頂部導覽 -->
+        <div style="padding: 10px; background:#f8f9fa; border-bottom:1px solid #ddd;">
+            <a href="index.html" class="btn-back">⬅ 返回首頁</a>
         </div>
+
+        <!-- 模式切換 -->
         <div class="mode-tabs">
-            <button class="tab-btn active" onclick="switchMode('local')">🏠 本機離線版</button>
-            <button class="tab-btn" onclick="switchMode('github')">☁️ GitHub 線上版</button>
+            <button class="tab-btn active" onclick="switchMode('local')">🏠 本機離線</button>
+            <button class="tab-btn" onclick="switchMode('github')">☁️ GitHub 線上</button>
         </div>
 
+        <!-- 本機面板 -->
         <div id="panel-local" class="mode-panel active">
-            <p style="margin:0 0 5px 0; font-size:0.9em;">直接讀寫電腦資料夾 (需 Chrome/Edge)</p>
-            <button class="btn-blue" style="width:100%" onclick="connectLocalFolder()">📁 連接專案資料夾</button>
-            <div id="local-status" class="status-tag status-err" style="display:none;">未連接</div>
-            
-            <hr style="margin: 10px 0; border:0; border-top:1px solid #ddd;">
-            
-            <label>載入檔案 (讀取硬碟)</label>
-            <div style="display:flex; gap:5px;">
+            <button class="btn-blue" style="width:100%" onclick="connectLocalFolder()">📁 連接資料夾</button>
+            <div id="local-status" class="status-tag status-err" style="display:none">未連接</div>
+            <hr>
+            <label>載入檔案</label>
+            <div class="btn-group">
                 <button onclick="loadLocalFile('zh')">繁中</button>
-                <button onclick="loadLocalFile('en')">English</button>
-                <button onclick="loadLocalFile('cn')">簡中</button>
-                <button onclick="loadLocalFile('th')">泰文</button>
+                <button onclick="loadLocalFile('en')">EN</button>
             </div>
         </div>
 
+        <!-- GitHub 面板 (⚠️重點：ID 必須對應 admin.js) -->
         <div id="panel-github" class="mode-panel">
-            <input type="password" id="gh-token" placeholder="Token (ghp_...)" style="font-size:0.8em;">
+            <input type="password" id="gh_token" placeholder="Token (ghp_...)" style="font-size:12px;">
             <div style="display:flex; gap:5px;">
-                <input type="text" id="gh-owner" placeholder="User" style="font-size:0.8em;">
-                <input type="text" id="gh-repo" placeholder="Repo" style="font-size:0.8em;">
+                <input type="text" id="gh_user" placeholder="User" style="font-size:12px;">
+                <input type="text" id="gh_repo" placeholder="Repo" style="font-size:12px;">
             </div>
-            <button class="btn-blue" style="width:100%; margin-top:5px;" onclick="saveGhConfig()">💾 儲存設定</button>
-            
-            <hr style="margin: 10px 0; border:0; border-top:1px solid #ddd;">
-            
+            <button class="btn-gray" style="width:100%; margin-top:5px;" onclick="saveGhConfig()">💾 儲存設定</button>
+            <hr>
             <label>從 GitHub 載入</label>
-            <div style="display:flex; gap:5px;">
+            <div class="btn-group">
                 <button onclick="loadGithubFile('zh')">繁中</button>
-                <button onclick="loadGithubFile('en')">English</button>
-                <button onclick="loadGithubFile('cn')">簡中</button>
-                <button onclick="loadGithubFile('th')">泰文</button>
+                <button onclick="loadGithubFile('en')">EN</button>
             </div>
         </div>
 
-        <div style="padding: 10px; background: #e9ecef; text-align: center;">
-            <button id="btn-save-all" class="btn-green" style="width:100%; font-size:1.1em; padding:10px;" onclick="saveData()">
-                💾 儲存 (目前: 本機模式)
+        <!-- 儲存按鈕 -->
+        <div style="padding: 10px;">
+            <button id="saveGithubBtn" class="btn-green" style="width:100%; padding:10px;" onclick="saveData()">
+                💾 儲存變更
             </button>
         </div>
 
+        <!-- 樹狀圖 -->
         <div class="toolbar">
             <button onclick="addNode('cat')">+分類</button>
             <button onclick="addNode('sub')">+子類</button>
             <button onclick="addNode('q')">+問題</button>
-            <button onclick="deleteNode()" style="margin-left:auto; color:red;">刪除</button>
+            <button onclick="deleteNode()" style="color:red; margin-left:auto;">刪除</button>
         </div>
-
-        <div id="tree-wrapper">
-            <div id="tree-root"></div>
-        </div>
+        <div id="tree-wrapper"><div id="tree-root"></div></div>
     </aside>
 
     <main id="admin-main">
         <div class="card" id="editor-panel" style="display:none;">
-            <div style="display:flex; justify-content:space-between;">
-                <h2 id="edit-header" style="margin:0;">編輯</h2>
-                <span id="node-type" style="background:#eee; padding:2px 8px; border-radius:4px;">TYPE</span>
-            </div>
+            <h2>編輯內容 <span id="node-type" style="font-size:0.5em; background:#eee; padding:2px;"></span></h2>
             
-            <label>ID</label>
-            <input type="text" id="inp-id">
-            
-            <label>Title</label>
-            <input type="text" id="inp-title">
+            <label>ID</label><input type="text" id="inp-id">
+            <label>標題</label><input type="text" id="inp-title">
             
             <div id="q-fields" style="display:none;">
-                <div class="hint">💡 點擊下方文字框按 <b>Ctrl+V</b> 可貼上圖片 (自動存檔)</div>
-
-                <label>Symptoms</label>
-                <textarea id="inp-symptoms" class="paste-area"></textarea>
-
-                <label>Root Causes</label>
-                <textarea id="inp-causes" class="paste-area"></textarea>
-
-                <label>Solution Steps</label>
-                <textarea id="inp-steps" class="paste-area"></textarea>
-
-                <label>Notes</label>
-                <textarea id="inp-notes" class="paste-area" style="height:60px;"></textarea>
+                <div class="hint">💡 提示：點擊文字框按 <b>Ctrl+V</b> 可貼上圖片 (自動上傳)</div>
+                <label>症狀 (Symptoms)</label><textarea id="inp-symptoms" class="paste-area"></textarea>
+                <label>原因 (Root Causes)</label><textarea id="inp-causes" class="paste-area"></textarea>
+                <label>對策 (Solution)</label><textarea id="inp-steps" class="paste-area"></textarea>
+                <label>備註 (Notes)</label><textarea id="inp-notes" class="paste-area"></textarea>
             </div>
             
-            <div style="text-align: right; margin-top:20px;">
-                <button class="btn-blue" style="padding:10px 20px;" onclick="applyEdit()">暫存修改 (Apply)</button>
+            <div style="text-align:right; margin-top:15px;">
+                <button class="btn-blue" onclick="applyEdit()">暫存修改 (Apply)</button>
             </div>
-        </div>
-
-        <div id="welcome-msg" class="card" style="text-align:center; color:#666; margin-top:50px;">
-            <h3>歡迎使用 FAQ 編輯器</h3>
-            <p>請先選擇左側的「本機」或「GitHub」模式並載入檔案。</p>
         </div>
     </main>
 
