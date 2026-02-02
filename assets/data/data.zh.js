@@ -17,7 +17,7 @@ window.FAQ_DATA_ZH = {
                             "title": "無法過電",
                             "content": {
                                 "symptoms": [
-                                    "燈號未亮",
+                                    //"燈號未亮",
                                     "{{img:assets/images/img_1769763514401.png}}"
                                 ],
                                 "rootCauses": [
