@@ -47,7 +47,8 @@ window.FAQ_DATA_ZH = {
                             "title": "New",
                             "content": {
                                 "symptoms": [
-                                    "321"
+                                    "321",
+                                    "{{img:assets/images/img_1770014988645.png}}"
                                 ],
                                 "rootCauses": [
                                     "123"
