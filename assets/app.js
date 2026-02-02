@@ -1,4 +1,4 @@
-const STATE = { mergedData: null, fuse: null, currentLang: 'zh' };
+const STATE = { mergedData: null, fuse: null, currentLang: 'zh', currentImgSize: 'medium' };
 
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -13,19 +13,31 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = url.toString();
         });
     }
+
+    const sizeSelect = document.getElementById('img-size-select');
+    if(sizeSelect) {
+        const savedSize = localStorage.getItem('faq_img_size') || 'medium';
+        STATE.currentImgSize = savedSize;
+        sizeSelect.value = savedSize;
+
+        sizeSelect.addEventListener('change', (e) => {
+            const newSize = e.target.value;
+            STATE.currentImgSize = newSize;
+            localStorage.setItem('faq_img_size', newSize);
+            updateAllImagesSize();
+        });
+    }
     
     initLightbox();
 
-    // 🚀 動態載入資料 (自動破除快取)
     loadDataScripts().then(() => {
         initApp();
     });
 });
 
-// 核心功能：動態插入 script 標籤並加上時間戳記
 function loadDataScripts() {
     const langs = ['zh', 'cn', 'en', 'th'];
-    const version = new Date().getTime(); // 使用當下時間作為版本號
+    const version = new Date().getTime(); 
     
     console.log(`[App] Auto-loading data with version: ${version}`);
 
@@ -38,7 +50,7 @@ function loadDataScripts() {
                 resolve();
             };
             script.onerror = () => {
-                console.warn(`[App] Failed to load data.${lang}.js (File might not exist yet)`);
+                console.warn(`[App] Failed to load data.${lang}.js`);
                 resolve();
             };
             document.body.appendChild(script);
@@ -54,7 +66,6 @@ function initApp() {
         en: window.FAQ_DATA_EN, th: window.FAQ_DATA_TH
     };
 
-    // 檢查是否有載入任何資料
     const base = dataMap.zh || dataMap.en || dataMap["zh-CN"] || dataMap.th;
     
     if (!base) {
@@ -79,13 +90,10 @@ function initApp() {
     }
     window.addEventListener('hashchange', renderCurrentHash);
     
-    // ✅ 恢復目錄渲染
     renderTOC(STATE.mergedData.categories);
-    
     renderCurrentHash();
 }
 
-// 多語系合併
 function mergeData(map) {
     const base = map.zh || map.en || map["zh-CN"] || map.th;
     const categories = JSON.parse(JSON.stringify(base.categories));
@@ -100,7 +108,8 @@ function mergeData(map) {
                     node.title[lang] = found.title;
                     if(level==='q') {
                         node.content = node.content || {};
-                        ['symptoms','rootCauses','solutionSteps','notes'].forEach(k => {
+                        // ✨ 新增 keywords 欄位合併
+                        ['symptoms','rootCauses','solutionSteps','notes','keywords'].forEach(k => {
                             if(!node.content[k]) node.content[k]={};
                             if(Array.isArray(node.content[k])) node.content[k]={};
                             node.content[k][lang] = found.content?.[k];
@@ -133,7 +142,6 @@ function findNode(nodes, id, level) {
     return null;
 }
 
-// Lightbox
 function initLightbox() {
     const lightbox = document.createElement('div');
     lightbox.id = 'lightbox';
@@ -156,12 +164,21 @@ function openLightbox(src) {
     lb.classList.add('active');
 }
 
-// 圖片解析
+function updateAllImagesSize() {
+    const containers = document.querySelectorAll('.img-container');
+    containers.forEach(div => {
+        div.classList.remove('img-size-small', 'img-size-medium', 'img-size-large');
+        div.classList.add(`img-size-${STATE.currentImgSize}`);
+    });
+}
+
 function parseContent(text) {
     if (!text) return "";
     let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
     return safeText.replace(/\{\{img:([^}]+)\}\}/g, (match, src) => {
-        return `<div class="img-container"><img src="${src}" onclick="openLightbox('${src}')" title="點擊放大"></div>`;
+        const sizeClass = `img-size-${STATE.currentImgSize}`;
+        return `<div class="img-container ${sizeClass}"><img src="${src}" onclick="openLightbox('${src}')" title="點擊放大"></div>`;
     });
 }
 
@@ -169,6 +186,15 @@ function renderList(label, obj) {
     const list = obj?.[STATE.currentLang];
     if (!list || !list.length) return '';
     return `<div class="section"><h3>${label}</h3><ul>${list.map(i=>`<li>${parseContent(i)}</li>`).join('')}</ul></div>`;
+}
+
+// ✨ 新增：渲染關鍵字區域
+function renderKeywords(obj) {
+    const list = obj?.[STATE.currentLang];
+    if (!list || !list.length) return '';
+    // 將陣列轉為標籤 HTML
+    const tagsHtml = list.map(k => `<span class="keyword-tag">#${parseContent(k)}</span>`).join(' ');
+    return `<div class="keywords-box"><strong>關鍵字：</strong> ${tagsHtml}</div>`;
 }
 
 function renderCurrentHash() {
@@ -186,18 +212,18 @@ function renderCurrentHash() {
                 ${renderList('可能原因', c.rootCauses)}
                 ${renderList('解決步驟', c.solutionSteps)}
                 ${note ? `<div class="note"><b>Note:</b> ${parseContent(note)}</div>` : ''}
+                
+                <!-- ✨ 顯示關鍵字 -->
+                ${renderKeywords(c.keywords)}
             </div>
         `;
-        // 點擊連結後自動展開目錄
         highlightSidebar(id);
     }
 }
 
-// ✅ 恢復：渲染目錄函式 (預設隱藏子層級)
 function renderTOC(nodes) {
     let html='<ul class="toc-root">';
     nodes.forEach(cat => {
-        // 第一層 Category
         html += `
             <li>
                 <div class="toc-item cat" onclick="toggle(this)">
@@ -207,7 +233,6 @@ function renderTOC(nodes) {
         `;
         
         cat.subcategories.forEach(sub => {
-            // 第二層 Subcategory
             html += `
                 <li>
                     <div class="toc-item sub" onclick="toggle(this)">
@@ -217,7 +242,6 @@ function renderTOC(nodes) {
             `;
             
             sub.questions.forEach(q => {
-                // 第三層 Question
                 html += `
                     <li>
                         <a href="#${q.id}" class="toc-link" onclick="renderCurrentHash()" data-id="${q.id}">
@@ -233,22 +257,19 @@ function renderTOC(nodes) {
     document.getElementById('sidebar-content').innerHTML = html+'</ul>';
 }
 
-// ✅ 恢復：收折切換函式
 function toggle(el) { 
     const list = el.nextElementSibling;
     if(list) {
         list.classList.toggle('hidden');
-        el.classList.toggle('expanded'); // 控制箭頭旋轉樣式
+        el.classList.toggle('expanded');
     }
 }
 
-// 高亮並自動展開目錄
 function highlightSidebar(id) {
     document.querySelectorAll('.toc-link').forEach(el => el.classList.remove('active'));
     const link = document.querySelector(`.toc-link[data-id="${id}"]`);
     if(link) {
         link.classList.add('active');
-        // 向上展開父層
         let parent = link.closest('ul');
         while(parent && !parent.classList.contains('toc-root')) {
             if(parent.classList.contains('hidden')) {
@@ -289,10 +310,9 @@ function handleSearch(val) {
     
     links.forEach(l => {
         const match = res.includes(l.getAttribute('data-id'));
-        const li = l.closest('li'); // Question 的 li
+        const li = l.closest('li'); 
         if(match) {
             li.style.display = '';
-            // 搜尋命中時自動展開
             let parent = li.closest('ul');
             while(parent && !parent.classList.contains('toc-root')) {
                 parent.classList.remove('hidden');
