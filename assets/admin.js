@@ -376,11 +376,21 @@ function parseAndRender(text) {
             console.log(`[Admin] Parsed variable: ${currentVarName}`);
             renderTree();
             
+            // ⚠️ 加入防呆檢查：確認元素存在才修改樣式
             const editorPanel = document.getElementById('editor-panel');
-            if (editorPanel) editorPanel.style.display = 'none';
+            if (editorPanel) {
+                editorPanel.style.display = 'none';
+            } else {
+                console.warn("[Admin] Warning: 'editor-panel' element not found.");
+            }
             
             const welcomeMsg = document.getElementById('welcome-msg');
-            if (welcomeMsg) welcomeMsg.style.display = 'none';
+            if (welcomeMsg) {
+                welcomeMsg.style.display = 'none';
+            } else {
+                console.warn("[Admin] Warning: 'welcome-msg' element not found.");
+            }
+
         } catch(e) {
             console.error("[Admin] JSON Parse Error:", e);
             alert("資料格式錯誤 (JSON Parse Error)，請檢查檔案內容是否有語法錯誤（例如多餘的逗號）");
