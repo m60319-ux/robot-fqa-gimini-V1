@@ -1,182 +1,138 @@
 // assets/app.js - Auto Cache Busting Version
-const STATE = { mergedData: null, fuse: null, currentLang: 'zh' };
-
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    STATE.currentLang = urlParams.get('lang') || 'zh';
-    
-    const langSelect = document.getElementById('lang-select');
-    if(langSelect) {
-        langSelect.value = STATE.currentLang;
-        langSelect.addEventListener('change', (e) => {
-            const url = new URL(window.location);
-            url.searchParams.set('lang', e.target.value);
-            window.location.href = url.toString();
+// 渲染目錄 (修改：預設收折)
+function renderTOC(nodes) {
+    let html = '<ul class="toc-root">';
+    nodes.forEach(cat => {
+        // 第一層 (Category): 預設加上 arrow
+        // 點擊事件綁定在 toc-item 上
+        html += `
+            <li>
+                <div class="toc-item cat" onclick="toggle(this)">
+                    <span>${cat.title[STATE.currentLang]}</span>
+                    <span class="arrow">▼</span>
+                </div>
+                <!-- 預設加上 hidden class 來隱藏子選單 -->
+                <ul class="toc-sub hidden">
+        `;
+        
+        cat.subcategories.forEach(sub => {
+            // 第二層 (Subcategory)
+            html += `
+                <li>
+                    <div class="toc-item sub" onclick="toggle(this)">
+                        <span>${sub.title[STATE.currentLang]}</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <!-- 預設加上 hidden class -->
+                    <ul class="toc-q hidden">
+            `;
+            
+            sub.questions.forEach(q => {
+                // 第三層 (Question): 點擊後不收折，而是顯示內容
+                html += `
+                    <li>
+                        <a href="#${q.id}" class="toc-link" onclick="renderCurrentHash()">
+                            ${q.title[STATE.currentLang]}
+                        </a>
+                    </li>
+                `;
+            });
+            html += `</ul></li>`;
         });
-    }
-    
-    initLightbox();
-
-    // 🚀 新增：動態載入資料 (自動破除快取)
-    // 這會確保每次重新整理都抓到最新的 data.js
-    loadDataScripts().then(() => {
-        initApp();
+        html += `</ul></li>`;
     });
-});
-
-// 🚀 核心功能：動態插入 script 標籤並加上時間戳記
-function loadDataScripts() {
-    const langs = ['zh', 'cn', 'en', 'th'];
-    const version = new Date().getTime(); // 使用當下時間作為版本號，保證最新
-    
-    console.log(`[App] Loading data with version: ${version}`);
-
-    const promises = langs.map(lang => {
-        return new Promise((resolve) => {
-            const script = document.createElement('script');
-            // 關鍵：加上 ?v=... 參數
-            script.src = `assets/data/data.${lang}.js?v=${version}`;
-            script.onload = () => {
-                console.log(`[App] Loaded data.${lang}.js`);
-                resolve();
-            };
-            script.onerror = () => {
-                console.warn(`[App] Failed to load data.${lang}.js (File might not exist yet)`);
-                resolve(); // 失敗也繼續，避免卡死整個 App
-            };
-            document.body.appendChild(script);
-        });
-    });
-
-    return Promise.all(promises);
+    document.getElementById('sidebar-content').innerHTML = html + '</ul>';
 }
 
 function initApp() {
-    const dataMap = {
-        zh: window.FAQ_DATA_ZH, 
-        "zh-CN": window.FAQ_DATA_CN,
-        en: window.FAQ_DATA_EN, 
-        th: window.FAQ_DATA_TH
-    };
-
-    // 檢查是否有載入任何資料
-    const base = dataMap.zh || dataMap.en || dataMap["zh-CN"] || dataMap.th;
+// 切換收折狀態 (修改：增加箭頭旋轉)
+function toggle(el) {
+    // 1. 找到下一個兄弟元素 (也就是 ul 列表)
+    const list = el.nextElementSibling;
     
-    if (!base) {
-        document.getElementById('main-content').innerHTML = `
-            <div style="text-align:center; padding:50px; color:#666;">
-                <h3>⚠️ 無法讀取資料</h3>
-                <p>請檢查 data.zh.js 是否存在，或 GitHub Pages 是否已部署完成。</p>
-            </div>`;
+    if (list) {
+        // 2. 切換 hidden class (顯示/隱藏)
+        list.classList.toggle('hidden');
+        
+        // 3. 切換 expanded class (控制箭頭旋轉)
+        el.classList.toggle('expanded');
+    }
+}
+
+// 搜尋功能需要特別處理：搜尋時要自動展開
+function handleSearch(val) {
+    val = val.trim();
+    const links = document.querySelectorAll('.toc-link');
+    
+    if(!val) {
+        // 清空搜尋時，恢復所有項目的顯示，但保持預設收折狀態
+        // 這裡簡單重繪比較快，或者只隱藏不符合的
+        renderTOC(STATE.mergedData.categories); 
         return;
     }
-
-    STATE.mergedData = mergeData(dataMap);
-    initSearch(STATE.mergedData.categories);
-
-    const searchInput = document.getElementById('search-input');
-    if(searchInput) {
-        let timer;
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(timer);
-            timer = setTimeout(() => handleSearch(e.target.value), 300);
-        });
-    }
-    window.addEventListener('hashchange', renderCurrentHash);
-    renderTOC(STATE.mergedData.categories);
-    renderCurrentHash();
-}
-
-function mergeData(map) {
-    const base = map.zh || map.en || map["zh-CN"] || map.th;
-    const categories = JSON.parse(JSON.stringify(base.categories));
     
-    const mergeNode = (nodes, level) => {
-        nodes.forEach(node => {
-            node.title = {};
-            for (const [lang, data] of Object.entries(map)) {
-                if(!data) continue;
-                const found = findNode(data.categories, node.id, level);
-                if(found) {
-                    node.title[lang] = found.title;
-                    if(level==='q') {
-                        node.content = node.content || {};
-                        ['symptoms','rootCauses','solutionSteps','notes'].forEach(k => {
-                            if(!node.content[k]) node.content[k]={};
-                            if(Array.isArray(node.content[k])) node.content[k]={};
-                            node.content[k][lang] = found.content?.[k];
-                        });
-                    }
+    const res = STATE.fuse.search(val).map(r => r.item.id);
+    
+    links.forEach(l => {
+        const match = res.includes(l.getAttribute('data-id'));
+        const li = l.closest('li'); // Question 的 li
+        
+        if (match) {
+            // 顯示該問題
+            li.style.display = '';
+            
+            // 自動展開父層 (Subcategory UL)
+            const subUl = li.closest('.toc-q');
+            if(subUl) {
+                subUl.classList.remove('hidden');
+                // 讓 Subcategory 標題箭頭轉向
+                subUl.previousElementSibling.classList.add('expanded');
+                
+                // 自動展開爺爺層 (Category UL)
+                const catUl = subUl.closest('.toc-sub');
+                if(catUl) {
+                    catUl.classList.remove('hidden');
+                    catUl.previousElementSibling.classList.add('expanded');
                 }
             }
-            if(node.subcategories) mergeNode(node.subcategories, 'sub');
-            if(node.questions) mergeNode(node.questions, 'q');
-        });
-    };
-    mergeNode(categories, 'cat');
-    return { categories };
-}
-
-function findNode(nodes, id, level) {
-    if(!nodes) return null;
-    for(const cat of nodes) {
-        if(level==='cat' && cat.id===id) return cat;
-        if(cat.subcategories) {
-            for(const sub of cat.subcategories) {
-                if(level==='sub' && sub.id===id) return sub;
-                if(sub.questions) {
-                    const q = sub.questions.find(x => x.id===id);
-                    if(level==='q' && q) return q;
-                }
-            }
+        } else {
+            // 隱藏不符合的問題
+            li.style.display = 'none';
         }
-    }
-    return null;
-}
-
-// Lightbox
-function initLightbox() {
-    const lightbox = document.createElement('div');
-    lightbox.id = 'lightbox';
-    lightbox.innerHTML = `<span id="lightbox-close">&times;</span><img id="lightbox-img" src="">`;
-    document.body.appendChild(lightbox);
-
-    const closeBtn = document.getElementById('lightbox-close');
-    const img = document.getElementById('lightbox-img');
-    const close = () => { lightbox.classList.remove('active'); img.src=''; };
-
-    closeBtn.onclick = close;
-    lightbox.onclick = (e) => { if(e.target===lightbox) close(); };
-    document.onkeydown = (e) => { if(e.key==='Escape') close(); };
-}
-
-function openLightbox(src) {
-    const lb = document.getElementById('lightbox');
-    const img = document.getElementById('lightbox-img');
-    img.src = src;
-    lb.classList.add('active');
-}
-
-// 圖片解析
-function parseContent(text) {
-    if (!text) return "";
-    let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    return safeText.replace(/\{\{img:([^}]+)\}\}/g, (match, src) => {
-        return `<div class="img-container"><img src="${src}" onclick="openLightbox('${src}')" title="點擊放大"></div>`;
     });
 }
 
-function renderList(label, obj) {
-    const list = obj?.[STATE.currentLang];
-    if (!list || !list.length) return '';
-    return `<div class="section"><h3>${label}</h3><ul>${list.map(i=>`<li>${parseContent(i)}</li>`).join('')}</ul></div>`;
+// 當點擊連結後，自動展開該路徑 (UX優化)
+function highlightSidebar(id) {
+    // 先移除所有 active
+    document.querySelectorAll('.toc-link').forEach(el => el.classList.remove('active'));
+    
+    const link = document.querySelector(`.toc-link[href="#${id}"]`);
+    if(link) {
+        link.classList.add('active');
+        
+        // 展開父層
+        let parent = link.parentElement;
+        while(parent && !parent.classList.contains('toc-root')) {
+            if(parent.tagName === 'UL' && parent.classList.contains('hidden')) {
+                parent.classList.remove('hidden');
+                // 旋轉箭頭
+                if(parent.previousElementSibling) {
+                    parent.previousElementSibling.classList.add('expanded');
+                }
+            }
+            parent = parent.parentElement;
+        }
+    }
 }
 
+// 修改 renderCurrentHash 呼叫 highlightSidebar
 function renderCurrentHash() {
     const id = window.location.hash.replace('#', '');
     if(!id) return;
     const q = findNode(STATE.mergedData.categories, id, 'q');
     if(q) {
+        // ... (內容渲染邏輯不變) ...
         const c = q.content || {};
         const note = c.notes?.[STATE.currentLang];
         document.getElementById('main-content').innerHTML = `
@@ -189,6 +145,9 @@ function renderCurrentHash() {
                 ${note ? `<div class="note"><b>Note:</b> ${parseContent(note)}</div>` : ''}
             </div>
         `;
+        
+        // 加入這行：高亮並展開側邊欄
+        highlightSidebar(id);
     }
 }
 
