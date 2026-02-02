@@ -59,7 +59,10 @@ window.FAQ_DATA_ZH = {
                                 "solutionSteps": [
                                     "321"
                                 ],
-                                "notes": "123"
+                                "notes": "123",
+                                "keywords": [
+                                    "AL001"
+                                ]
                             }
                         }
                     ]
