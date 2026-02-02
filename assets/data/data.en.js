@@ -17,7 +17,7 @@ window.FAQ_DATA_EN = {
                             "title": "Power Failure",
                             "content": {
                                 "symptoms": [
-                                    "LED not lighting up"
+                                    "LED not lighting up123"
                                 ],
                                 "rootCauses": [
                                     "Fuse blown",
