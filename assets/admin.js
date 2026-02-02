@@ -375,8 +375,12 @@ function parseAndRender(text) {
             currentData = JSON.parse(match[2]);
             console.log(`[Admin] Parsed variable: ${currentVarName}`);
             renderTree();
-            document.getElementById('editor-panel').style.display = 'none';
-            document.getElementById('welcome-msg').style.display = 'none';
+            
+            const editorPanel = document.getElementById('editor-panel');
+            if (editorPanel) editorPanel.style.display = 'none';
+            
+            const welcomeMsg = document.getElementById('welcome-msg');
+            if (welcomeMsg) welcomeMsg.style.display = 'none';
         } catch(e) {
             console.error("[Admin] JSON Parse Error:", e);
             alert("資料格式錯誤 (JSON Parse Error)，請檢查檔案內容是否有語法錯誤（例如多餘的逗號）");
