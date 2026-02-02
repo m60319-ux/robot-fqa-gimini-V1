@@ -46,10 +46,16 @@ window.FAQ_DATA_TH = {
                             "id": "Q-4988",
                             "title": "New",
                             "content": {
-                                "symptoms": [],
-                                "rootCauses": [],
-                                "solutionSteps": [],
-                                "notes": ""
+                                "symptoms": [
+                                    "123"
+                                ],
+                                "rootCauses": [
+                                    "123"
+                                ],
+                                "solutionSteps": [
+                                    "321"
+                                ],
+                                "notes": "321"
                             }
                         }
                     ]
