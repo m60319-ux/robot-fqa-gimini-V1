@@ -17,7 +17,7 @@ window.FAQ_DATA_TH = {
                             "title": "ไม่มีไฟเข้า",
                             "content": {
                                 "symptoms": [
-                                    "ไฟ LED ไม่ติด"
+                                    "ไฟ LED ไม่ติด123"
                                 ],
                                 "rootCauses": [
                                     "ฟิวส์ขาด",
