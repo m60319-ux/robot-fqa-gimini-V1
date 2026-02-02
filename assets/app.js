@@ -1,4 +1,3 @@
-// assets/app.js - Full Version
 const STATE = { mergedData: null, fuse: null, currentLang: 'zh' };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // 初始化 Lightbox
     initLightbox();
     initApp();
 });
@@ -26,16 +24,8 @@ function initApp() {
         en: window.FAQ_DATA_EN, th: window.FAQ_DATA_TH
     };
 
-    // 容錯檢查
     if (!dataMap.zh) {
-        console.warn('data.zh.js not loaded');
-        // 嘗試用其他語言當骨幹
-    }
-
-    // 至少要有一個語言檔
-    const base = dataMap.zh || dataMap.en || dataMap["zh-CN"] || dataMap.th;
-    if(!base) {
-        document.getElementById('main-content').innerHTML = "錯誤：未載入任何資料檔";
+        document.getElementById('main-content').innerHTML = "錯誤：找不到資料檔";
         return;
     }
 
@@ -55,9 +45,7 @@ function initApp() {
     renderCurrentHash();
 }
 
-// 多語系合併
 function mergeData(map) {
-    // 找一個存在的當基準
     const base = map.zh || map.en || map["zh-CN"] || map.th;
     const categories = JSON.parse(JSON.stringify(base.categories));
     
@@ -104,7 +92,6 @@ function findNode(nodes, id, level) {
     return null;
 }
 
-// Lightbox
 function initLightbox() {
     const lightbox = document.createElement('div');
     lightbox.id = 'lightbox';
@@ -127,7 +114,6 @@ function openLightbox(src) {
     lb.classList.add('active');
 }
 
-// 圖片解析
 function parseContent(text) {
     if (!text) return "";
     let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
