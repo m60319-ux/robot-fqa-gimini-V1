@@ -1,4 +1,4 @@
-// assets/admin.js - Final Complete Version
+// assets/admin.js - Final Fixed Complete Version
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -53,7 +53,8 @@ async function connectLocalFolder() {
     if (!('showDirectoryPicker' in window)) return alert("瀏覽器不支援，請用 Chrome/Edge");
     try {
         localHandle = await window.showDirectoryPicker();
-        await localHandle.getDirectoryHandle('assets'); // 檢查
+        // 檢查是否包含 assets 資料夾
+        await localHandle.getDirectoryHandle('assets'); 
         document.getElementById('local-status').innerText = "✅ 已連接";
         document.getElementById('local-status').className = "status-tag status-ok";
         document.getElementById('local-status').style.display = "inline-block";
@@ -78,7 +79,8 @@ async function loadLocalFile(lang) {
     }
 }
 
-// --- 檔案載入 (GitHub) ---
+// --- 檔案載入 (GitHub) --- 
+// ⚠️ 這是您之前缺少的函式，現在補上了！
 async function loadGithubFile(lang) {
     const token = document.getElementById('gh_token').value.trim();
     const user = document.getElementById('gh_user').value.trim();
@@ -101,12 +103,15 @@ async function loadGithubFile(lang) {
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         
         const data = await res.json();
+        // GitHub API 回傳的是 Base64，需解碼 (支援中文)
+        // 使用 decodeURIComponent(escape(atob(...))) 處理中文編碼
         const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
         
         parseAndRender(content);
         alert(`✅ 從 GitHub 載入成功 (data.${lang}.js)`);
         
     } catch (e) {
+        console.error(e);
         alert("GitHub 讀取失敗: " + e.message);
     }
 }
@@ -114,6 +119,7 @@ async function loadGithubFile(lang) {
 // --- 儲存邏輯 ---
 async function saveData() {
     if(!currentData) return alert("沒有資料可存");
+    // 轉成 JS 字串
     const str = JSON.stringify(currentData, null, 4);
     const content = `window.${currentVarName} = ${str};`;
 
@@ -141,6 +147,8 @@ async function saveLocalData(content) {
 
 async function saveGithubData(content) {
     const saveBtn = document.getElementById('saveGithubBtn');
+    
+    // ⚠️ 關鍵修正 1: 定義 oldText，避免 ReferenceError
     const oldText = saveBtn.innerText;
     
     const token = document.getElementById('gh_token').value.trim();
@@ -160,13 +168,14 @@ async function saveGithubData(content) {
             'Accept': 'application/vnd.github.v3+json'
         };
 
-        // 1. GET SHA
+        // 1. GET SHA (為了更新檔案，必須先取得當前的 SHA)
         const getRes = await fetch(apiUrl, { headers });
-        if(!getRes.ok) throw new Error("無法取得檔案狀態");
+        if(!getRes.ok) throw new Error("無法取得檔案狀態 (可能檔案不存在或 Repo 設定錯誤)");
         const fileData = await getRes.json();
 
         // 2. PUT Update
         saveBtn.innerText = '⏳ 上傳中...';
+        // 解決中文亂碼的 Base64 編碼
         const encodedContent = btoa(unescape(encodeURIComponent(content)));
         
         const putRes = await fetch(apiUrl, {
@@ -175,17 +184,19 @@ async function saveGithubData(content) {
             body: JSON.stringify({
                 message: 'Update via Admin Panel',
                 content: encodedContent,
-                sha: fileData.sha
+                sha: fileData.sha // 帶上剛剛拿到的 SHA
             })
         });
 
         if(!putRes.ok) throw new Error("上傳失敗");
-        alert('🎉 成功！GitHub 已更新');
+        
+        alert('🎉 成功！GitHub 已更新 (請稍等 1-2 分鐘生效)');
 
     } catch (e) {
         console.error(e);
         alert('❌ 錯誤: ' + e.message);
     } finally {
+        // ⚠️ 關鍵修正 2: 恢復按鈕文字，這時 oldText 已經有定義了
         saveBtn.disabled = false;
         saveBtn.innerText = oldText;
     }
@@ -248,7 +259,7 @@ async function uploadImageToGithub(filename, base64) {
             content: base64
         })
     });
-    if(!res.ok) throw new Error("API Error");
+    if(!res.ok) throw new Error("API Error: " + res.statusText);
 }
 
 function insertText(el, text) {
@@ -259,6 +270,7 @@ function insertText(el, text) {
 
 // --- 編輯器邏輯 (UI) ---
 function parseAndRender(text) {
+    // 解析 JS 檔: window.XXX = { ... };
     const match = text.match(/window\.(\w+)\s*=\s*(\{[\s\S]*\});?/);
     if(match) {
         currentVarName = match[1];
@@ -268,10 +280,11 @@ function parseAndRender(text) {
             document.getElementById('editor-panel').style.display = 'none';
             document.getElementById('welcome-msg').style.display = 'none';
         } catch(e) {
-            alert("資料格式錯誤 (JSON Parse Error)");
+            console.error(e);
+            alert("資料格式錯誤 (JSON Parse Error)，請檢查檔案內容是否有語法錯誤（例如多餘的逗號）");
         }
     } else {
-        alert("檔案格式不符");
+        alert("檔案格式不符 (找不到 window.FAQ_DATA_...)");
     }
 }
 
