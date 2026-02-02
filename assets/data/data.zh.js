@@ -20,14 +20,12 @@ window.FAQ_DATA_ZH = {
                                     "燈號未"
                                 ],
                                 "rootCauses": [
-                                    "保險絲斷",
-                                    "{{img:assets/images/img_1769763508765.png}}"
+                                    "保險絲斷"
                                 ],
                                 "solutionSteps": [
-                                    "更換保險絲",
-                                    "{{img:assets/images/img_1769763514401.png}}"
+                                    "更換保險絲"
                                 ],
-                                "notes": "注意安全\n{{img:assets/images/img_1769763517692.png}}"
+                                "notes": "注意安全"
                             }
                         }
                     ]
