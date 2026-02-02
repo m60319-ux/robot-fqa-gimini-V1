@@ -1,5 +1,8 @@
 window.FAQ_DATA_ZH = {
-    "meta": { "lang": "zh", "version": "1.0" },
+    "meta": {
+        "lang": "zh",
+        "version": "1.0"
+    },
     "categories": [
         {
             "id": "CAT-01",
@@ -10,12 +13,18 @@ window.FAQ_DATA_ZH = {
                     "title": "馬達異常",
                     "questions": [
                         {
-                            "id": "Q-001",
+                            "id": "Q-002",
                             "title": "無法過電",
                             "content": {
-                                "symptoms": ["燈號未亮"],
-                                "rootCauses": ["保險絲斷"],
-                                "solutionSteps": ["更換保險絲"],
+                                "symptoms": [
+                                    "燈號未亮"
+                                ],
+                                "rootCauses": [
+                                    "保險絲斷"
+                                ],
+                                "solutionSteps": [
+                                    "更換保險絲"
+                                ],
                                 "notes": "注意安全"
                             }
                         }
