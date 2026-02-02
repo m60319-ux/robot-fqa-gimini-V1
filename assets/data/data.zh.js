@@ -18,7 +18,6 @@ window.FAQ_DATA_ZH = {
                             "content": {
                                 "symptoms": [
                                     "燈號未",
-
                                 ],
                                 "rootCauses": [
                                     "保險絲斷",
