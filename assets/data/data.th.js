@@ -13,7 +13,7 @@ window.FAQ_DATA_TH = {
                     "title": "มอเตอร์ผิดปกติ",
                     "questions": [
                         {
-                            "id": "Q-00123",
+                            "id": "Q-009",
                             "title": "ไม่มีไฟเข้า",
                             "content": {
                                 "symptoms": [
