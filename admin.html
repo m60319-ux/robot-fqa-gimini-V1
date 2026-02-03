@@ -19,6 +19,7 @@
             <button class="tab-btn" onclick="switchMode('github')">☁️ GitHub 線上</button>
         </div>
 
+        <!-- 本機面板 -->
         <div id="panel-local" class="mode-panel active">
             <button class="btn-blue" style="width:100%" onclick="connectLocalFolder()">📁 連接資料夾</button>
             <div id="local-status" class="status-tag status-err" style="display:none">未連接</div>
@@ -30,18 +31,16 @@
                 <button onclick="loadLocalFile('cn')">CN</button>
                 <button onclick="loadLocalFile('th')">TH</button>
             </div>
-            
             <hr>
-            <!-- ✨ 新增：CSV 操作區 -->
-            <label>CSV 操作 (匯出/匯入)</label>
+            <label>CSV 操作 (本機)</label>
             <div style="display:flex; gap:5px; margin-bottom:5px;">
-                <button class="btn-gray" style="flex:1" onclick="exportToCSV()">📥 匯出 CSV</button>
-                <button class="btn-gray" style="flex:1" onclick="document.getElementById('csv-upload').click()">📤 匯入 CSV</button>
+                <button class="btn-gray" style="flex:1" onclick="exportToCSV()">📥 匯出</button>
+                <button class="btn-gray" style="flex:1" onclick="document.getElementById('csv-upload').click()">📤 匯入</button>
                 <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="importFromCSV(this)">
             </div>
-            <p style="font-size:11px; color:#666; margin:0;">* CSV 將存取於 assets/data/</p>
         </div>
 
+        <!-- GitHub 面板 -->
         <div id="panel-github" class="mode-panel">
             <input type="password" id="gh_token" placeholder="Token (ghp_...)" style="font-size:12px;">
             <div style="display:flex; gap:5px;">
@@ -50,13 +49,21 @@
             </div>
             <button class="btn-gray" style="width:100%; margin-top:5px;" onclick="saveGhConfig()">💾 儲存設定</button>
             <hr>
-            <label>從 GitHub 載入</label>
+            <label>從 GitHub 載入 (JSON)</label>
             <div class="btn-group">
                 <button onclick="loadGithubFile('zh')">繁中</button>
                 <button onclick="loadGithubFile('en')">EN</button>
                 <button onclick="loadGithubFile('cn')">CN</button>
                 <button onclick="loadGithubFile('th')">TH</button>
             </div>
+            <hr>
+            <!-- ✨ 新增：GitHub CSV 操作區 -->
+            <label>CSV 操作 (GitHub)</label>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-gray" style="flex:1" onclick="exportToCSV()">☁️ 匯出 CSV</button>
+                <button class="btn-gray" style="flex:1" onclick="loadCsvFromGithub()">☁️ 載入 CSV</button>
+            </div>
+            <p style="font-size:11px; color:#666; margin:3px 0 0 0;">* 讀寫位置: assets/data/</p>
         </div>
 
         <div style="padding: 10px;">
