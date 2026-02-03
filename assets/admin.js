@@ -1,3 +1,100 @@
+Gemini
+
+關鍵字分割錯誤排除與修復
+我的內容
+釘選的對話
+釘選的對話
+釘選的對話
+釘選的對話
+釘選的對話
+關鍵字分割錯誤排除與修復
+CSV 轉 JS 格式轉換腳本
+肝指數94的解析與建議
+外食低GI早餐選擇指南
+台北到馬納多交通指南
+烤吳郭魚料理教學
+GitHub 存放圖片檔案教學
+瑞士策馬特馬特洪峰美景
+GitHub 檔案列表顯示問題與解決
+匯豐旅人卡 vs 華航璀璨卡
+機器人廠商品牌力控比較
+匯川埃斯頓FPC應用研究
+埃斯頓Codroid力傳感器配置
+iPhone 17 Pro 方案總價分析
+和 Gemini 的對話
+我的關鍵字輸入，為什麼沒有分成兩個關鍵字
+
+根據您提供的檔案與截圖，原因在於 資料檔案 (data.zh.js) 中，這兩個詞目前被儲存為「同一個字串」，而不是「兩個獨立的字串」。
+
+即使 admin.js 程式碼中已經寫好了分割邏輯，但如果資料是在該邏輯生效前儲存的，或者瀏覽器快取了舊版的 admin.js，就會導致這個現象。
+
+以下是詳細原因分析與解決步驟：
+
+1. 原因分析
+根據您上傳的 data.zh.js，目前的資料結構如下：
+
+JavaScript
+"keywords": [
+    "AL044、驅動器"  // 這裡被視為一整句，是一單個元素
+]
+正確的結構應該要是：
+
+JavaScript
+"keywords": [
+    "AL044",      // 元素 1
+    "驅動器"       // 元素 2
+]
+為什麼顯示時黏在一起？ 因為前台 (app.js) 的渲染邏輯是單純把陣列裡的每個元素變成一個 #Tag。因為資料只有一個元素，所以只顯示一個 Tag。
+
+2. 解決方法 (Fix)
+您的 admin.js 程式碼第 360 行其實已經包含了處理頓號 、 的邏輯：
+
+JavaScript
+// 針對 keywords 欄位做特殊處理，將各種符號統一轉為換行
+if (id === 'inp-keywords') {
+    val = val.replace(/[\u3000\+,\/\\、]/g, '\n'); // 這裡有包含「、」
+}
+請依照以下步驟操作，即可修復：
+
+清除快取並重新整理： 在後台頁面按 Ctrl + F5 (或是 Mac 上的 Cmd + Shift + R)，確保瀏覽器載入的是最新版的 admin.js。
+
+重新觸發儲存：
+
+點選該問題 (AL044 那一題)。
+
+在關鍵字欄位隨意加一個空白，再刪除（目的是讓系統偵測到變更）。
+
+或者，您也可以手動將「AL044、驅動器」改成兩行：
+
+Plaintext
+AL044
+驅動器
+點擊 「暫存修改 (Apply)」。
+
+關鍵點：此時觀察 admin.js 是否運作正常，如果運作正常，它會自動把頓號切開並儲存。
+
+儲存檔案： 點擊左側綠色的 「💾 儲存變更」。
+
+3. 未來預防 (建議修改)
+為了避免瀏覽器一直快取舊的 admin.js 導致邏輯沒更新，建議您修改 admin.html，在引入 admin.js 時加上版本號或時間戳記：
+
+修改檔案： admin.html (約第 107 行)
+
+原代碼：
+
+HTML
+<script src="assets/admin.js"></script>
+建議改為：
+
+HTML
+<script src="assets/admin.js?v=20260203"></script>
+完成上述操作後，再次儲存，您的關鍵字就會正確變成 #AL044 與 #驅動器 兩個分開的標籤了。
+
+直接產生admin.js
+
+這份 admin.js 已經包含了處理「頓號、」與其他符號的分割邏輯（位於 applyEdit 函式中）。您可以直接使用此程式碼覆蓋原本的檔案。
+
+JavaScript
 // assets/admin.js - V3.7 Multiple Keywords Support
 let currentMode = 'local';
 let currentData = null;
@@ -383,6 +480,7 @@ function applyEdit() {
             let val = el.value;
             
             // 針對 keywords 欄位做特殊處理，將各種符號統一轉為換行
+            // 這裡包含了 \u3000(全形空), +, ,, /, \, 、(頓號)
             if (id === 'inp-keywords') {
                 val = val.replace(/[\u3000\+,\/\\、]/g, '\n');
             }
@@ -634,3 +732,8 @@ async function loadCsvFromGithub() {
         alert("GitHub CSV 載入失敗: " + e.message);
     }
 }
+
+
+
+Gemini 可能會出錯，請查證。
+
