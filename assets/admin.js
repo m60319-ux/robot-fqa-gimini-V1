@@ -1,4 +1,4 @@
-// assets/admin.js - V3.3 CSV Support
+// assets/admin.js - V3.4 CSV GitHub Support
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -14,10 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
         area.addEventListener('paste', handleImagePaste);
     });
 });
-
-// ... existing switchMode, loadGhConfig, saveGhConfig, connectLocalFolder, loadLocalFile, loadGithubFile, saveData, saveLocalData, saveGithubData, handleImagePaste, uploadImageToGithub, insertText, parseAndRender, renderTree, createNode, loadEditor, applyEdit, addNode, deleteNode ...
-// 為了簡潔，這裡省略了上面已有的函式，請保留您原本完整的程式碼
-// 只列出新增/修改的部分
 
 // --- 工具：Base64 解碼與剝殼 ---
 function b64ToUtf8(b64) {
@@ -358,7 +354,10 @@ function loadEditor(item, type, arr, idx) {
         if(document.getElementById('inp-symptoms')) document.getElementById('inp-symptoms').value = join(c.symptoms);
         if(document.getElementById('inp-causes')) document.getElementById('inp-causes').value = join(c.rootCauses);
         if(document.getElementById('inp-steps')) document.getElementById('inp-steps').value = join(c.solutionSteps);
+        
+        // 關鍵字
         if(document.getElementById('inp-keywords')) document.getElementById('inp-keywords').value = join(c.keywords);
+        
         if(document.getElementById('inp-notes')) document.getElementById('inp-notes').value = c.notes || "";
     } else if (qDiv) {
         qDiv.style.display = 'none';
@@ -418,21 +417,28 @@ function deleteNode() {
 
 // ✨✨✨ 新增功能：CSV 匯出與匯入 ✨✨✨
 
-// 1. 匯出 CSV
+// 1. 匯出 CSV (支援 Local 與 GitHub)
 async function exportToCSV() {
     if (!currentData || !currentData.categories) return alert("沒有資料可匯出");
-    if (!localHandle) return alert("請先連接資料夾");
+    
+    // GitHub 模式需要 Token
+    if (currentMode === 'github') {
+        const token = document.getElementById('gh_token').value.trim();
+        if (!token) return alert("請先設定 GitHub Token");
+    }
+    // 本機模式需要連接
+    else if (!localHandle) {
+        return alert("請先連接資料夾");
+    }
 
     const rows = [];
-    // 表頭
     rows.push(["category_id", "category_title", "sub_id", "sub_title", "question_id", "question_title", "symptoms", "root_causes", "solution_steps", "keywords", "notes"]);
 
-    // 遍歷資料轉為 CSV 行
     currentData.categories.forEach(cat => {
         cat.subcategories.forEach(sub => {
             sub.questions.forEach(q => {
                 const c = q.content || {};
-                const join = (arr) => Array.isArray(arr) ? arr.join('||') : ""; // 用 || 分隔多行
+                const join = (arr) => Array.isArray(arr) ? arr.join('||') : ""; 
                 
                 rows.push([
                     cat.id, cat.title,
@@ -448,35 +454,58 @@ async function exportToCSV() {
         });
     });
 
-    // 產生 CSV 字串 (使用 PapaParse)
     const csv = Papa.unparse(rows);
-    
-    // 寫入檔案
+    const fileName = `export_${currentLang}_${Date.now()}.csv`;
+    const contentWithBOM = '\uFEFF' + csv; // 加入 BOM 支援 Excel
+
     try {
-        const assets = await localHandle.getDirectoryHandle('assets');
-        const dataDir = await assets.getDirectoryHandle('data');
-        const fileName = `export_${currentLang}_${Date.now()}.csv`;
-        const fileHandle = await dataDir.getFileHandle(fileName, {create: true});
-        const writable = await fileHandle.createWritable();
-        
-        // 加入 BOM 以支援 Excel 中文顯示
-        await writable.write(new Uint8Array([0xEF, 0xBB, 0xBF])); 
-        await writable.write(csv);
-        await writable.close();
-        
-        alert(`✅ 匯出成功！\n檔案已儲存至 assets/data/${fileName}`);
+        if (currentMode === 'local') {
+            const assets = await localHandle.getDirectoryHandle('assets');
+            const dataDir = await assets.getDirectoryHandle('data');
+            const fileHandle = await dataDir.getFileHandle(fileName, {create: true});
+            const writable = await fileHandle.createWritable();
+            await writable.write(new Uint8Array([0xEF, 0xBB, 0xBF])); 
+            await writable.write(csv);
+            await writable.close();
+            alert(`✅ 匯出成功 (本機)！\n檔案已儲存至 assets/data/${fileName}`);
+        } else {
+            // GitHub Export (Upload CSV)
+            const token = document.getElementById('gh_token').value;
+            const user = document.getElementById('gh_user').value;
+            const repo = document.getElementById('gh_repo').value;
+            const path = `assets/data/${fileName}`;
+            const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+            
+            // CSV 轉 Base64 (UTF-8 safe)
+            const encodedContent = btoa(unescape(encodeURIComponent(contentWithBOM)));
+
+            const res = await fetch(apiUrl, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({
+                    message: `Export CSV ${fileName}`,
+                    content: encodedContent
+                })
+            });
+
+            if(!res.ok) throw new Error(`GitHub API Error: ${res.status}`);
+            alert(`✅ 匯出成功 (GitHub)！\n檔案已上傳至 ${path}`);
+        }
     } catch(e) {
         alert("匯出失敗: " + e.message);
     }
 }
 
-// 2. 匯入 CSV
+// 2. 匯入 CSV (通用)
 async function importFromCSV(input) {
     const file = input.files[0];
     if(!file) return;
 
     if (!confirm("⚠️ 匯入 CSV 將會「完全覆蓋」目前編輯器中的資料。\n確定要繼續嗎？")) {
-        input.value = ""; // 重置 input
+        input.value = ""; 
         return;
     }
 
@@ -487,14 +516,12 @@ async function importFromCSV(input) {
             try {
                 const rows = results.data;
                 const newCategories = [];
-                const catMap = {}; // 用來快速找 Category
-                const subMap = {}; // 用來快速找 Subcategory
+                const catMap = {}; 
+                const subMap = {}; 
 
                 rows.forEach(row => {
-                    // 略過空行或標題行 (PapaParse 已處理 header, 但防呆一下)
                     if (!row.category_id || !row.question_id) return;
 
-                    // 1. 處理 Category
                     let cat = catMap[row.category_id];
                     if (!cat) {
                         cat = { id: row.category_id, title: row.category_title, subcategories: [] };
@@ -502,8 +529,6 @@ async function importFromCSV(input) {
                         newCategories.push(cat);
                     }
 
-                    // 2. 處理 Subcategory
-                    // Subcategory ID 必須唯一，為了保險起見，可以結合 Cat ID 做 Key
                     const subKey = row.category_id + "_" + row.sub_id;
                     let sub = subMap[subKey];
                     if (!sub) {
@@ -512,12 +537,8 @@ async function importFromCSV(input) {
                         cat.subcategories.push(sub);
                     }
 
-                    // 3. 處理 Question
                     const split = (str) => str ? str.split('||') : [];
                     
-                    // 欄位名稱對應 (CSV header -> JSON key)
-                    // 注意 PapaParse 解析出來的 key 是根據 CSV 第一列
-                    // 這裡假設 CSV 第一列是我們 export 出來的那些名稱
                     const q = {
                         id: row.question_id,
                         title: row.question_title,
@@ -532,7 +553,6 @@ async function importFromCSV(input) {
                     sub.questions.push(q);
                 });
 
-                // 更新當前資料
                 currentData.categories = newCategories;
                 renderTree();
                 alert("✅ CSV 匯入成功！請檢查資料並記得按「儲存」。");
@@ -541,7 +561,7 @@ async function importFromCSV(input) {
                 console.error(e);
                 alert("CSV 解析失敗: " + e.message);
             } finally {
-                input.value = ""; // 重置 input 以便下次能選同個檔案
+                input.value = ""; 
             }
         }
     });
