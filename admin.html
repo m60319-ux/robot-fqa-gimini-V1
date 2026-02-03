@@ -7,7 +7,8 @@
     <link rel="icon" href="data:,">
     <script src="assets/libs/papaparse.min.js"></script>
 </head>
-<body>
+<!-- ✨✨✨ 新增 class="admin-mode" 以確保後台左右排列 ✨✨✨ -->
+<body class="admin-mode">
 
     <aside id="admin-sidebar">
         <div style="padding: 10px; background:#f8f9fa; border-bottom:1px solid #ddd;">
@@ -57,7 +58,7 @@
                 <button onclick="loadGithubFile('th')">TH</button>
             </div>
             <hr>
-            <!-- ✨ 新增：GitHub CSV 操作區 -->
+            <!-- GitHub CSV 操作區 -->
             <label>CSV 操作 (GitHub)</label>
             <div style="display:flex; gap:5px;">
                 <button class="btn-gray" style="flex:1" onclick="exportToCSV()">☁️ 匯出 CSV</button>
@@ -66,13 +67,11 @@
             <p style="font-size:11px; color:#666; margin:3px 0 0 0;">* 讀寫位置: assets/data/</p>
         </div>
 
-        <!-- ⚠️ 原本在這裡的按鈕與 Toolbar 已經移動到 main -->
-
         <div id="tree-wrapper"><div id="tree-root"></div></div>
     </aside>
 
     <main id="admin-main">
-        <!-- ✨✨✨ 新增：頂部工具列 (原本擠在側邊欄的按鈕移來這裡) ✨✨✨ -->
+        <!-- 頂部工具列 -->
         <div class="main-toolbar">
             <div class="group-left">
                 <button onclick="addNode('cat')" class="btn-gray">➕ 新增分類</button>
