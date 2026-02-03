@@ -59,7 +59,7 @@ window.FAQ_DATA_ZH = {
                     ]
                 },
                 {
-                    "id": "SUB-21",
+                    "id": "SUB-02",
                     "title": "驅動器異常",
                     "questions": [
                         {
