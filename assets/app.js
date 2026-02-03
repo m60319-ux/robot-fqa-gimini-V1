@@ -318,7 +318,7 @@ function initSearch(nodes) {
             { name: 'keywords', weight: 0.5 }, // 關鍵字權重最高
             { name: 'content', weight: 0.1 }
         ],
-        threshold: 0.2, // 🔴 降低閥值 (越低越精確，0.0 完全匹配) -> 解決搜尋太模糊的問題
+        threshold: 0.1, // 🔴 降低閥值 (越低越精確，0.0 完全匹配) -> 解決搜尋太模糊的問題
         ignoreLocation: true,
         useExtendedSearch: true // 🔴 啟用擴充搜尋 -> 支援 "AL 馬達" 這種多關鍵字
     });
