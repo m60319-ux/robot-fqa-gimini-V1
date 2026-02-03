@@ -161,7 +161,7 @@ function renderContent(q) {
     // 處理圖片標籤 {{img:path}} -> <img src="...">
     const processText = (text) => {
         return text.replace(/{{img:(.*?)}}/g, (match, path) => {
-            // 預設為中型尺寸 (size-m)
+            // 預設為中型尺寸 (size-s)
             return `<div class="img-container size-m"><img src="${path}" onclick="openFullscreen(this.src)"></div>`;
         });
     };
