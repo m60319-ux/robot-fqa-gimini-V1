@@ -17,11 +17,11 @@ window.FAQ_DATA_ZH = {
                             "title": "無法過電",
                             "content": {
                                 "symptoms": [
-                                    "燈號未亮"
+                                    "燈號未亮123"
                                 ],
                                 "rootCauses": [
                                     "保險絲斷",
-                                    "{{img:assets/images/img_1769763508765.png}}"
+                                    "{{img:assets/images/img_1769763508765.png}}{{img:assets/images/img_1769763508765.png}}"
                                 ],
                                 "solutionSteps": [
                                     "更換保險絲",
