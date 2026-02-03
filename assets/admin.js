@@ -1,4 +1,4 @@
-// assets/admin.js - V4.2 Unified Separator (|)
+// assets/admin.js - V4.3 Auto-save on Navigation & Enter
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -17,6 +17,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ✨✨✨ 自動插入「下載 CSV」按鈕 (免改 HTML) ✨✨✨
     injectDownloadButton();
+
+    // ✨✨✨ 新增：監聽 Enter 鍵 (針對輸入框) ✨✨✨
+    const panel = document.getElementById('editor-panel');
+    if (panel) {
+        panel.addEventListener('keydown', (e) => {
+            // 如果是 Input 欄位按下 Enter (排除 Textarea 以免無法換行)
+            if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+                e.preventDefault(); // 防止送出表單或其他預設行為
+                applyEdit(false);   // false = 顯示提示 (主動按 Enter 代表想要確認)
+            }
+        });
+    }
 });
 
 // 自動在「匯出 CSV」按鈕旁邊，多加一顆「下載到本機」的按鈕
@@ -377,6 +389,13 @@ function createNode(item, label, type, arr, idx) {
 }
 
 function loadEditor(item, type, arr, idx) {
+    // ✨✨✨ 自動儲存邏輯 ✨✨✨
+    // 如果目前有正在編輯的節點，且編輯面板是開啟的，就自動儲存上一筆資料
+    if (activeNode && document.getElementById('editor-panel').style.display !== 'none') {
+        // 使用 true (silent) 參數，不顯示 alert
+        applyEdit(true); 
+    }
+
     activeNode = item;
     activeParent = { array: arr, index: idx };
     
@@ -411,7 +430,8 @@ function loadEditor(item, type, arr, idx) {
     }
 }
 
-function applyEdit() {
+// ✨✨✨ 修改 applyEdit 支援 silent 模式 ✨✨✨
+function applyEdit(silent = false) {
     if(!activeNode) return;
     if(document.getElementById('inp-id')) activeNode.id = document.getElementById('inp-id').value;
     if(document.getElementById('inp-title')) activeNode.title = document.getElementById('inp-title').value;
@@ -439,7 +459,11 @@ function applyEdit() {
         activeNode.content.notes = notesEl ? notesEl.value : "";
     }
     renderTree();
-    alert("修改已暫存");
+    
+    // 只有在非靜音模式 (silent=false) 時才顯示 Alert
+    if (!silent) {
+        alert("修改已暫存");
+    }
 }
 
 function addNode(type) {
