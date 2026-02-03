@@ -1,4 +1,5 @@
 ﻿category_id,category_title,sub_id,sub_title,question_id,question_title,symptoms,root_causes,solution_steps,keywords,notes
 CAT-01,硬體問題,SUB-01,馬達異常,Q-001,無法過電,燈號未,保險絲斷||{{img:assets/images/img_1769763508765.png}},更換保險絲||{{img:assets/images/img_1769763514401.png}},AL001,"注意安全
 {{img:assets/images/img_1769763517692.png}}"
-CAT-9742,New,SUB-3842,New,Q-6967,New,321||{{img:assets/images/img_1770014988645.png}},123,321,AL001,123
+
+CAT-42,New,SUB-3842,New,Q-6967,New,321||{{img:assets/images/img_1770014988645.png}},123,321,AL001,123
