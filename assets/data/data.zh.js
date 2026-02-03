@@ -36,29 +36,6 @@ window.FAQ_DATA_ZH = {
                     ]
                 },
                 {
-                    "id": "SUB-02",
-                    "title": "驅動器異常",
-                    "questions": [
-                        {
-                            "id": "Q-002",
-                            "title": "驅動器輸出電流過大",
-                            "content": {
-                                "symptoms": [
-                                    "驅動器輸出電流過大"
-                                ],
-                                "rootCauses": [
-                                    "通常發生此狀況馬達的動力線(UVW)可能有問題"
-                                ],
-                                "solutionSteps": [],
-                                "notes": "",
-                                "keywords": [
-                                    "AL083"
-                                ]
-                            }
-                        }
-                    ]
-                },
-                {
                     "id": "SUB-21",
                     "title": "驅動器異常",
                     "questions": [
