@@ -1,4 +1,4 @@
-// assets/admin.js - V3.7 Multiple Keywords Support
+// assets/admin.js - V4.1 Auto-inject Download Button
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -14,7 +14,32 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.paste-area').forEach(area => {
         area.addEventListener('paste', handleImagePaste);
     });
+
+    // ✨✨✨ 自動插入「下載 CSV」按鈕 (免改 HTML) ✨✨✨
+    injectDownloadButton();
 });
+
+// 自動在「匯出 CSV」按鈕旁邊，多加一顆「下載到本機」的按鈕
+function injectDownloadButton() {
+    // 尋找原本呼叫 exportToCSV 的按鈕
+    const exportBtns = document.querySelectorAll('button[onclick*="exportToCSV"]');
+    
+    exportBtns.forEach(btn => {
+        // 避免重複加入
+        if (btn.parentNode.querySelector('.btn-auto-inject-dl')) return;
+
+        const newBtn = document.createElement('button');
+        newBtn.innerText = '📥 下載 CSV (本機)';
+        newBtn.className = btn.className + ' btn-auto-inject-dl'; // 複製原本按鈕的樣式
+        newBtn.style.marginLeft = '10px';
+        newBtn.style.backgroundColor = '#17a2b8'; // 給它一個特別的顏色 (青色)
+        newBtn.style.color = '#fff';
+        newBtn.onclick = downloadLocalCSV; // 綁定新的專用函式
+        
+        // 插入在原本按鈕的後面
+        btn.parentNode.insertBefore(newBtn, btn.nextSibling);
+    });
+}
 
 // --- 工具：Base64 解碼與剝殼 ---
 function b64ToUtf8(b64) {
@@ -80,17 +105,38 @@ function saveGhConfig() {
 
 // --- 檔案載入 (Local) ---
 async function connectLocalFolder() {
-    if (!('showDirectoryPicker' in window)) return alert("瀏覽器不支援 File System API");
+    if (!('showDirectoryPicker' in window)) return alert("瀏覽器不支援 File System API (請使用 Chrome/Edge 電腦版)");
+    
     try {
+        // 提示使用者選擇正確的層級
+        alert("請選擇專案的「根目錄」\n(即包含 admin.html 與 assets 資料夾的那一層)");
+
         localHandle = await window.showDirectoryPicker();
-        await localHandle.getDirectoryHandle('assets');
+        
+        // 檢查目錄結構是否正確 (必須包含 assets 資料夾)
+        try {
+            await localHandle.getDirectoryHandle('assets');
+        } catch (err) {
+            let isInsideAssets = false;
+            try { await localHandle.getDirectoryHandle('data'); isInsideAssets = true; } catch(e){}
+
+            if(isInsideAssets) {
+                throw new Error("您選到了 'assets' 資料夾！\n請上一層，選擇包含 admin.html 的「根目錄」。");
+            } else {
+                throw new Error("所選資料夾中找不到 'assets' 目錄！\n請確認您選擇的是正確的專案根目錄。");
+            }
+        }
+
         const status = document.getElementById('local-status');
         if(status) {
             status.innerText = "✅ 已連接";
             status.className = "status-tag status-ok";
             status.style.display = "inline-block";
         }
-    } catch(e) { alert("連接失敗: " + e.message); }
+    } catch(e) { 
+        if (e.name === 'AbortError') return;
+        alert("連接失敗: " + e.message); 
+    }
 }
 
 async function loadLocalFile(lang) {
@@ -374,21 +420,14 @@ function applyEdit() {
     if(qDiv && qDiv.style.display === 'block') {
         if(!activeNode.content) activeNode.content = {};
         
-        // ✨ 修改點：支援多種分隔符號 (換行, 逗號, 加號, 頓號, 斜線)
         const split = (id) => {
             const el = document.getElementById(id);
             if (!el) return [];
-            
-            // 讀取值
             let val = el.value;
-            
-            // 針對 keywords 欄位做特殊處理，將各種符號統一轉為換行
-            // 這裡包含了 \u3000(全形空), +, ,, /, \, 、(頓號)
+            // 處理頓號與其他符號
             if (id === 'inp-keywords') {
                 val = val.replace(/[\u3000\+,\/\\、]/g, '\n');
             }
-            
-            // 依換行符號分割，並過濾空值
             return val.split('\n').map(x => x.trim()).filter(x => x !== "");
         };
         
@@ -432,19 +471,9 @@ function deleteNode() {
 
 // ✨✨✨ CSV 匯出與匯入 ✨✨✨
 
-// 1. 匯出 CSV (支援 Local 與 GitHub)
-async function exportToCSV() {
-    if (!currentData || !currentData.categories) return alert("沒有資料可匯出");
-    
-    // GitHub 模式需要 Token
-    if (currentMode === 'github') {
-        const token = document.getElementById('gh_token').value.trim();
-        if (!token) return alert("請先設定 GitHub Token");
-    }
-    // 本機模式需要連接
-    else if (!localHandle) {
-        return alert("請先連接資料夾");
-    }
+// 💡 產生 CSV 內容字串
+function generateCSVContent() {
+    if (!currentData || !currentData.categories) return null;
 
     const rows = [];
     rows.push(["category_id", "category_title", "sub_id", "sub_title", "question_id", "question_title", "symptoms", "root_causes", "solution_steps", "keywords", "notes"]);
@@ -470,28 +499,65 @@ async function exportToCSV() {
     });
 
     const csv = Papa.unparse(rows);
+    return '\uFEFF' + csv; // BOM + CSV
+}
+
+// 💡 觸發瀏覽器下載 Blob
+function downloadCsvBlob(content, fileName) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// ✨ 新增：直接下載 CSV 到本機 (不問任何問題)
+function downloadLocalCSV() {
+    const content = generateCSVContent();
+    if (!content) return alert("沒有資料可下載");
+    
     const fileName = `export_${currentLang}_${Date.now()}.csv`;
-    const contentWithBOM = '\uFEFF' + csv; // 加入 BOM 支援 Excel
+    downloadCsvBlob(content, fileName);
+    alert("✅ CSV 下載已開始！");
+}
+
+// 1. 匯出 CSV (原始功能：包含 GitHub 上傳)
+async function exportToCSV() {
+    const contentWithBOM = generateCSVContent();
+    if (!contentWithBOM) return alert("沒有資料可匯出");
+    const fileName = `export_${currentLang}_${Date.now()}.csv`;
 
     try {
         if (currentMode === 'local') {
-            const assets = await localHandle.getDirectoryHandle('assets');
-            const dataDir = await assets.getDirectoryHandle('data');
-            const fileHandle = await dataDir.getFileHandle(fileName, {create: true});
-            const writable = await fileHandle.createWritable();
-            await writable.write(new Uint8Array([0xEF, 0xBB, 0xBF])); 
-            await writable.write(csv);
-            await writable.close();
-            alert(`✅ 匯出成功 (本機)！\n檔案已儲存至 assets/data/${fileName}`);
+            if (localHandle) {
+                // 寫入已連接的資料夾
+                const assets = await localHandle.getDirectoryHandle('assets');
+                const dataDir = await assets.getDirectoryHandle('data');
+                const fileHandle = await dataDir.getFileHandle(fileName, {create: true});
+                const writable = await fileHandle.createWritable();
+                await writable.write(new Uint8Array([0xEF, 0xBB, 0xBF])); 
+                await writable.write(contentWithBOM.substring(1)); // 去掉 BOM 因為上面手動寫了
+                await writable.close();
+                alert(`✅ 匯出成功 (本機)！\n檔案已儲存至 assets/data/${fileName}`);
+            } else {
+                // Fallback: 直接下載
+                downloadCsvBlob(contentWithBOM, fileName);
+            }
         } else {
-            // GitHub Export (Upload CSV)
-            const token = document.getElementById('gh_token').value;
-            const user = document.getElementById('gh_user').value;
-            const repo = document.getElementById('gh_repo').value;
+            // GitHub Mode: Upload
+            const token = document.getElementById('gh_token').value.trim();
+            const user = document.getElementById('gh_user').value.trim();
+            const repo = document.getElementById('gh_repo').value.trim();
+            
+            if (!token || !user || !repo) return alert("請先設定 GitHub Token 與 Repo 資訊！");
+
             const path = `assets/data/${fileName}`;
             const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
             
-            // CSV 轉 Base64 (UTF-8 safe)
             const encodedContent = btoa(unescape(encodeURIComponent(contentWithBOM)));
 
             const res = await fetch(apiUrl, {
