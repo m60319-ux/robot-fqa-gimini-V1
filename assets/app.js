@@ -89,14 +89,13 @@ function initApp() {
         let timer;
         searchInput.addEventListener('input', (e) => {
             clearTimeout(timer);
-            timer = setTimeout(() => handleSearch(e.target.value), 300);
+            // 縮短 debounce 時間讓反應快一點
+            timer = setTimeout(() => handleSearch(e.target.value), 200); 
         });
     }
     window.addEventListener('hashchange', renderCurrentHash);
     
-    // ✅ 恢復目錄渲染
     renderTOC(STATE.mergedData.categories);
-    
     renderCurrentHash();
 }
 
@@ -198,11 +197,10 @@ function renderList(label, obj) {
     return `<div class="section"><h3>${label}</h3><ul>${list.map(i=>`<li>${parseContent(i)}</li>`).join('')}</ul></div>`;
 }
 
-// ✨ 渲染關鍵字 (新增)
+// 渲染關鍵字
 function renderKeywords(obj) {
     const list = obj?.[STATE.currentLang];
     if (!list || !list.length) return '';
-    // 將陣列轉為標籤 HTML
     const tagsHtml = list.map(k => `<span class="keyword-tag">#${parseContent(k)}</span>`).join(' ');
     return `<div class="keywords-box"><strong>關鍵字：</strong> ${tagsHtml}</div>`;
 }
@@ -222,8 +220,6 @@ function renderCurrentHash() {
                 ${renderList('可能原因', c.rootCauses)}
                 ${renderList('解決步驟', c.solutionSteps)}
                 ${note ? `<div class="note"><b>Note:</b> ${parseContent(note)}</div>` : ''}
-                
-                <!-- ✨ 顯示關鍵字 -->
                 ${renderKeywords(c.keywords)}
             </div>
         `;
@@ -231,7 +227,6 @@ function renderCurrentHash() {
     }
 }
 
-// 渲染目錄函式 (預設隱藏子層級)
 function renderTOC(nodes) {
     let html='<ul class="toc-root">';
     nodes.forEach(cat => {
@@ -268,7 +263,6 @@ function renderTOC(nodes) {
     document.getElementById('sidebar-content').innerHTML = html+'</ul>';
 }
 
-// 收折切換函式
 function toggle(el) { 
     const list = el.nextElementSibling;
     if(list) {
@@ -277,7 +271,6 @@ function toggle(el) {
     }
 }
 
-// 高亮並自動展開目錄
 function highlightSidebar(id) {
     document.querySelectorAll('.toc-link').forEach(el => el.classList.remove('active'));
     const link = document.querySelector(`.toc-link[data-id="${id}"]`);
@@ -294,71 +287,76 @@ function highlightSidebar(id) {
     }
 }
 
-// ✨ 修改：初始化搜尋 (加入 keywords 欄位)
+// ✨ 修改：初始化搜尋 (支援精確匹配與多關鍵字)
 function initSearch(nodes) {
     if (typeof Fuse === 'undefined') return;
     const list = [];
     nodes.forEach(cat => {
         cat.subcategories.forEach(sub => {
             sub.questions.forEach(q => {
-                // 將多語系物件攤平為字串，方便搜尋
                 const titleStr = Object.values(q.title || {}).join(' ');
                 const content = q.content || {};
-                
-                // 把所有欄位轉成 JSON 字串，包含 keywords
                 const contentStr = JSON.stringify(content);
+                // 把關鍵字攤平成字串
+                const keywordsStr = Object.values(content.keywords || {}).flat().join(' ');
 
                 list.push({
                     id: q.id,
                     title: titleStr,
                     content: contentStr,
-                    // 特別把 keywords 獨立出來增加權重 (選用，但 Fuse 也可以直接搜 content)
-                    keywords: Object.values(content.keywords || {}).flat().join(' ')
+                    keywords: keywordsStr
                 });
             });
         });
     });
     
-    // 設定 Fuse 選項，加入 keywords
+    // 設定 Fuse 選項
     STATE.fuse = new Fuse(list, { 
         keys: [
             { name: 'id', weight: 0.2 },
             { name: 'title', weight: 0.3 },
-            { name: 'keywords', weight: 0.4 }, // 關鍵字權重高
+            { name: 'keywords', weight: 0.5 }, // 關鍵字權重最高
             { name: 'content', weight: 0.1 }
-        ], 
-        threshold: 0.3 
+        ],
+        threshold: 0.2, // 🔴 降低閥值 (越低越精確，0.0 完全匹配) -> 解決搜尋太模糊的問題
+        ignoreLocation: true,
+        useExtendedSearch: true // 🔴 啟用擴充搜尋 -> 支援 "AL 馬達" 這種多關鍵字
     });
 }
 
-// 搜尋處理
+// ✨ 修改：搜尋處理 (支援 AND 邏輯)
 function handleSearch(val) {
     val = val.trim();
     const links = document.querySelectorAll('.toc-link');
     
     if(!val) {
-        // 清空搜尋時，恢復所有項目的顯示，並保留原有的收折狀態
-        // 簡單做法是直接重繪 TOC (會重置收折)，或是只處理 display
-        // 為了使用者體驗，這裡選擇只隱藏不符合的 li
         links.forEach(l => {
             const li = l.closest('li');
             li.style.display = '';
-            // 恢復收折狀態可能比較複雜，這裡讓它們保持原本的狀態
-            // 或者可以選擇重置：
-            // renderTOC(STATE.mergedData.categories);
+            // 搜尋清空時，您可以選擇收折回去，或保持原狀
         });
         return;
     }
+    
+    // Fuse Extended Search 語法:
+    // 'text' 代表包含 text (Fuzzy)
+    // "'text" 代表精確匹配 text (Exact match)
+    // 這裡我們把使用者的 "A B" 轉換成 "'A 'B" (全部都必須精確/模糊匹配且同時存在)
+    // 但為了保留一點彈性，我們用空格分隔，讓 Fuse 自己去 AND
+    
+    // 將使用者的輸入 "AL 馬達" 轉為 "AL 馬達" (Fuse 預設空格就是 AND)
+    // 如果想要更精確，可以把每個詞前面加單引號: val.split(' ').map(s => `'${s}`).join(' ');
+    // 但這可能會太嚴格 (打錯一個字就搜不到)，所以我們先用預設的 AND 邏輯，配合 threshold 0.2 應該就夠了。
     
     const res = STATE.fuse.search(val).map(r => r.item.id);
     
     links.forEach(l => {
         const match = res.includes(l.getAttribute('data-id'));
-        const li = l.closest('li'); // Question 的 li
+        const li = l.closest('li'); 
         
         if (match) {
             li.style.display = '';
-            // 自動展開父層
+            // 自動展開
             let parent = li.closest('ul');
             while(parent && !parent.classList.contains('toc-root')) {
                 parent.classList.remove('hidden');
