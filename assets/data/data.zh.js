@@ -124,8 +124,10 @@ window.FAQ_DATA_ZH = {
                                 "solutionSteps": [
                                     "查看DI 6、7是不是STOP，是的話就無法啟動"
                                 ],
-                                "notes": "Modbus",
-                                "keywords": []
+                                "notes": "",
+                                "keywords": [
+                                    "Modbus"
+                                ]
                             }
                         }
                     ]
