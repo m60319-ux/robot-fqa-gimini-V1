@@ -1,5 +1,19 @@
 /* 基礎設定 */
-body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; color: #333; display: flex; height: 100vh; overflow: hidden; }
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    color: #333; 
+    display: flex; 
+    height: 100vh; 
+    overflow: hidden; 
+    flex-direction: column; /* ✨ 修復：前台預設為垂直排列 (Header 在上，內容在下) */
+}
+
+/* ✨ 新增：後台專用模式 (強制左右排列) */
+body.admin-mode {
+    flex-direction: row; 
+}
 
 /* 側邊欄 (前台預設) */
 aside { width: 320px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0; }
