@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>機器人故障排除知識庫</title>
+    <title>機器人故障排除助手</title>
     <link rel="stylesheet" href="assets/styles.css">
     <!-- 引入 Fuse.js 用於模糊搜尋 -->
     <script src="assets/libs/fuse.min.js"></script>
@@ -20,6 +20,9 @@
         <button onclick="setLang('cn')" id="btn-cn">简中</button>
         <button onclick="setLang('en')" id="btn-en">EN</button>
         <button onclick="setLang('th')" id="btn-th">ไทย</button>
+        
+        <!-- ✨✨✨ 新增：後台管理按鈕 ✨✨✨ -->
+        <button onclick="checkAdminPass()" style="margin-left: 15px; border-color: #f39c12; color: #f39c12;" title="進入管理後台">⚙️ 管理</button>
     </div>
 </header>
 
@@ -63,6 +66,18 @@
 
 <!-- 主程式 -->
 <script src="assets/app.js"></script>
+
+<!-- ✨✨✨ 新增：密碼驗證腳本 ✨✨✨ -->
+<script>
+    function checkAdminPass() {
+        const password = prompt("請輸入管理員密碼：");
+        if (password === "DeltaFAE") {
+            window.location.href = "admin.html";
+        } else if (password !== null) { // 如果使用者不是按取消
+            alert("❌ 密碼錯誤！");
+        }
+    }
+</script>
 
 </body>
 </html>
