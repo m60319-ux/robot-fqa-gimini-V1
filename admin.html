@@ -7,9 +7,9 @@
     <link rel="icon" href="data:,">
     <script src="assets/libs/papaparse.min.js"></script>
 </head>
-<!-- ✨✨✨ 新增 class="admin-mode" 以確保後台左右排列 ✨✨✨ -->
 <body class="admin-mode">
 
+    <!-- 第一欄：設定與分類樹 -->
     <aside id="admin-sidebar">
         <div style="padding: 10px; background:#f8f9fa; border-bottom:1px solid #ddd;">
             <a href="index.html" class="btn-back">⬅ 返回首頁</a>
@@ -33,7 +33,7 @@
                 <button onclick="loadLocalFile('th')">TH</button>
             </div>
             <hr>
-            <label>CSV 操作 (本機)</label>
+            <label>CSV 操作</label>
             <div style="display:flex; gap:5px; margin-bottom:5px;">
                 <button class="btn-gray" style="flex:1" onclick="exportToCSV()">📥 匯出</button>
                 <button class="btn-gray" style="flex:1" onclick="document.getElementById('csv-upload').click()">📤 匯入</button>
@@ -50,33 +50,43 @@
             </div>
             <button class="btn-gray" style="width:100%; margin-top:5px;" onclick="saveGhConfig()">💾 儲存設定</button>
             <hr>
-            <label>從 GitHub 載入 (JSON)</label>
+            <label>GitHub 操作</label>
             <div class="btn-group">
                 <button onclick="loadGithubFile('zh')">繁中</button>
                 <button onclick="loadGithubFile('en')">EN</button>
                 <button onclick="loadGithubFile('cn')">CN</button>
                 <button onclick="loadGithubFile('th')">TH</button>
             </div>
-            <hr>
-            <!-- GitHub CSV 操作區 -->
-            <label>CSV 操作 (GitHub)</label>
-            <div style="display:flex; gap:5px;">
+            <div style="display:flex; gap:5px; margin-top:5px;">
                 <button class="btn-gray" style="flex:1" onclick="exportToCSV()">☁️ 匯出 CSV</button>
                 <button class="btn-gray" style="flex:1" onclick="loadCsvFromGithub()">☁️ 載入 CSV</button>
             </div>
-            <p style="font-size:11px; color:#666; margin:3px 0 0 0;">* 讀寫位置: assets/data/</p>
         </div>
 
+        <!-- 分類樹 (只顯示 Cat/Sub) -->
         <div id="tree-wrapper"><div id="tree-root"></div></div>
     </aside>
 
+    <!-- ✨✨✨ 第二欄：問題列表 (新增) ✨✨✨ -->
+    <div id="admin-list-panel" class="question-list-panel">
+        <div class="search-box">
+            <input type="text" id="list-filter" placeholder="🔍 篩選目前列表..." oninput="filterQuestionList(this.value)">
+        </div>
+        <div id="list-root">
+            <div style="padding:40px 20px; text-align:center; color:#999;">
+                請點選左側<br>📂 子分類
+            </div>
+        </div>
+    </div>
+
+    <!-- 第三欄：編輯區 -->
     <main id="admin-main">
         <!-- 頂部工具列 -->
         <div class="main-toolbar">
             <div class="group-left">
-                <button onclick="addNode('cat')" class="btn-gray">➕ 新增分類</button>
-                <button onclick="addNode('sub')" class="btn-gray">➕ 新增子類</button>
-                <button onclick="addNode('q')" class="btn-gray">➕ 新增問題</button>
+                <button onclick="addNode('cat')" class="btn-gray">➕ 分類</button>
+                <button onclick="addNode('sub')" class="btn-gray">➕ 子類</button>
+                <button onclick="addNode('q')" class="btn-blue">➕ 新增問題</button>
             </div>
             <div class="group-right">
                 <button onclick="deleteNode()" class="btn-red">🗑️ 刪除</button>
@@ -87,14 +97,14 @@
         <div class="card" id="editor-panel" style="display:none;">
             <h2>編輯內容 <span id="node-type" style="font-size:0.5em; background:#eee; padding:2px;"></span></h2>
             
-            <label>ID</label><input type="text" id="inp-id">
-            <label>標題</label><input type="text" id="inp-title">
+            <label>ID (唯一識別碼)</label><input type="text" id="inp-id">
+            <label>標題 / 名稱</label><input type="text" id="inp-title">
             
             <div id="q-fields" style="display:none;">
                 <div class="hint">💡 提示：點擊文字框按 <b>Ctrl+V</b> 可貼上圖片 (自動上傳)</div>
-                <label>症狀 (Symptoms)</label><textarea id="inp-symptoms" class="paste-area"></textarea>
-                <label>原因 (Root Causes)</label><textarea id="inp-causes" class="paste-area"></textarea>
-                <label>對策 (Solution)</label><textarea id="inp-steps" class="paste-area"></textarea>
+                <label>異常徵兆 (Symptoms)</label><textarea id="inp-symptoms" class="paste-area"></textarea>
+                <label>可能原因 (Root Causes)</label><textarea id="inp-causes" class="paste-area"></textarea>
+                <label>排查步驟 (Solution)</label><textarea id="inp-steps" class="paste-area"></textarea>
                 
                 <label>關鍵字 (Keywords)</label>
                 <textarea id="inp-keywords" class="paste-area" placeholder="請輸入關鍵字，一行一個"></textarea>
