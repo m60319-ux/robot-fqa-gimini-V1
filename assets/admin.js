@@ -1,4 +1,4 @@
-// assets/admin.js - V4.1 Auto-inject Download Button
+// assets/admin.js - V4.2 Unified Separator (|)
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -482,7 +482,8 @@ function generateCSVContent() {
         cat.subcategories.forEach(sub => {
             sub.questions.forEach(q => {
                 const c = q.content || {};
-                const join = (arr) => Array.isArray(arr) ? arr.join('||') : ""; 
+                // ✨ 修改點：原本是 join('||')，現在統一改為 join('|')
+                const join = (arr) => Array.isArray(arr) ? arr.join('|') : ""; 
                 
                 rows.push([
                     cat.id, cat.title,
@@ -604,7 +605,8 @@ function parseCsvRows(rows) {
             cat.subcategories.push(sub);
         }
 
-        const split = (str) => str ? str.split('||') : [];
+        // ✨ 修改點：原本是 split('||')，現在統一改為 split('|')
+        const split = (str) => str ? str.split('|') : [];
         
         const q = {
             id: row.question_id,
