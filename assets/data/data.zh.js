@@ -59,7 +59,7 @@ window.FAQ_DATA_ZH = {
                     ]
                 },
                 {
-                    "id": "SUB-02",
+                    "id": "SUB-21",
                     "title": "驅動器異常",
                     "questions": [
                         {
@@ -87,15 +87,7 @@ window.FAQ_DATA_ZH = {
                             "title": "AL044 驅動器功能使用率警告",
                             "content": {
                                 "symptoms": [
-                                    "驅動器功能使用率警告",
-                                    "Date        Time    Type    No.    Error Code    Description    描述",
-                                    "2024-12-09   12:50:19    Axis    Joint-5    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令",
-                                    "2024-12-09   12:50:19    Axis    Joint-4    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令",
-                                    "2024-12-09   12:50:19    Axis    Joint-3    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令",
-                                    "2024-12-09   12:50:19    Axis    Joint-2    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令",
-                                    "2024-12-09   12:50:19    Axis    Joint-6    AL044    Warning of Servo Drive function overload    驅動器功能使用率警告",
-                                    "2024-12-09   12:50:19    Axis    Joint-1    AL813    Axis error during interpretation of motion command    成員軸發生錯誤",
-                                    "2024-12-09   12:50:19    Group    1    E1.813    Axis error during interpretation of motion command    成員軸發生錯誤"
+                                    "驅動器功能使用率警告\n\nDate        Time    Type    No.    Error Code    Description    描述    \n\n2024-12-09   12:50:19    Axis    Joint-5    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令    \n\n2024-12-09   12:50:19    Axis    Joint-4    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令    \n\n2024-12-09   12:50:19    Axis    Joint-3    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令    \n\n2024-12-09   12:50:19    Axis    Joint-2    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令    \n\n2024-12-09   12:50:19    Axis    Joint-6    AL044    Warning of Servo Drive function overload    驅動器功能使用率警告    \n\n2024-12-09   12:50:19    Axis    Joint-1    AL813    Axis error during interpretation of motion command    成員軸發生錯誤    \n\n2024-12-09   12:50:19    Group    1    E1.813    Axis error during interpretation of motion command    成員軸發生錯誤"
                                 ],
                                 "rootCauses": [
                                     "該軸P2-66出廠預設值改為0x034。"
@@ -105,9 +97,7 @@ window.FAQ_DATA_ZH = {
                                 ],
                                 "notes": "",
                                 "keywords": [
-                                    "AL044",
-                                    "驅動器",
-                                    "ABC"
+                                    "AL044"
                                 ]
                             }
                         }
