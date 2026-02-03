@@ -1,4 +1,4 @@
-// assets/admin.js - V3.1 (Added Keywords Support)
+// assets/admin.js - V3.3 CSV Support
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -7,13 +7,42 @@ let activeNode = null;
 let activeParent = null;
 let localHandle = null;
 
-// 初始化
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("[Admin] DOM Loaded.");
     loadGhConfig();
     document.querySelectorAll('.paste-area').forEach(area => {
         area.addEventListener('paste', handleImagePaste);
     });
 });
+
+// ... existing switchMode, loadGhConfig, saveGhConfig, connectLocalFolder, loadLocalFile, loadGithubFile, saveData, saveLocalData, saveGithubData, handleImagePaste, uploadImageToGithub, insertText, parseAndRender, renderTree, createNode, loadEditor, applyEdit, addNode, deleteNode ...
+// 為了簡潔，這裡省略了上面已有的函式，請保留您原本完整的程式碼
+// 只列出新增/修改的部分
+
+// --- 工具：Base64 解碼與剝殼 ---
+function b64ToUtf8(b64) {
+    try {
+        const clean = (b64 || "").replace(/\s/g, "");
+        const bytes = Uint8Array.from(atob(clean), c => c.charCodeAt(0));
+        return new TextDecoder("utf-8").decode(bytes);
+    } catch (e) {
+        return decodeURIComponent(escape(atob(b64)));
+    }
+}
+
+function extractJsonPayload(text) {
+    if (!text) throw new Error("Empty file content");
+    const t = text.replace(/^\uFEFF/, "").trim();
+    if (t.startsWith("{") || t.startsWith("[")) return { varName: null, jsonText: t };
+    let m = t.match(/(?:window\.|const\s+|var\s+|let\s+)(\w+)\s*=\s*(\{[\s\S]*\})\s*;?\s*$/);
+    if (m) return { varName: m[1], jsonText: m[2] };
+    const firstBrace = t.indexOf('{');
+    const lastBrace = t.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1) {
+        return { varName: "FAQ_DATA_UNKNOWN", jsonText: t.substring(firstBrace, lastBrace + 1) };
+    }
+    throw new Error("無法識別檔案格式");
+}
 
 // --- 模式與設定 ---
 function switchMode(mode) {
@@ -26,17 +55,21 @@ function switchMode(mode) {
     document.getElementById(`panel-${mode}`).classList.add('active');
     
     const btn = document.getElementById('saveGithubBtn');
-    btn.innerText = mode === 'local' ? "💾 儲存 (本機硬碟)" : "🚀 儲存並上傳 GitHub";
-    btn.className = mode === 'local' ? "btn-green" : "btn-blue";
+    if(btn) {
+        btn.innerText = mode === 'local' ? "💾 儲存 (本機硬碟)" : "🚀 儲存並上傳 GitHub";
+        btn.className = mode === 'local' ? "btn-green" : "btn-blue";
+    }
 }
 
 function loadGhConfig() {
-    const conf = JSON.parse(localStorage.getItem('gh_config'));
-    if(conf) {
-        document.getElementById('gh_token').value = conf.token || '';
-        document.getElementById('gh_user').value = conf.user || '';
-        document.getElementById('gh_repo').value = conf.repo || '';
-    }
+    try {
+        const conf = JSON.parse(localStorage.getItem('gh_config'));
+        if(conf) {
+            document.getElementById('gh_token').value = conf.token || '';
+            document.getElementById('gh_user').value = conf.user || '';
+            document.getElementById('gh_repo').value = conf.repo || '';
+        }
+    } catch(e) {}
 }
 
 function saveGhConfig() {
@@ -50,16 +83,17 @@ function saveGhConfig() {
 
 // --- 檔案載入 (Local) ---
 async function connectLocalFolder() {
-    if (!('showDirectoryPicker' in window)) return alert("瀏覽器不支援，請用 Chrome/Edge");
+    if (!('showDirectoryPicker' in window)) return alert("瀏覽器不支援 File System API");
     try {
         localHandle = await window.showDirectoryPicker();
-        await localHandle.getDirectoryHandle('assets'); // 檢查
-        document.getElementById('local-status').innerText = "✅ 已連接";
-        document.getElementById('local-status').className = "status-tag status-ok";
-        document.getElementById('local-status').style.display = "inline-block";
-    } catch(e) { 
-        alert("連接失敗或選錯資料夾 (需包含 assets): " + e.message); 
-    }
+        await localHandle.getDirectoryHandle('assets');
+        const status = document.getElementById('local-status');
+        if(status) {
+            status.innerText = "✅ 已連接";
+            status.className = "status-tag status-ok";
+            status.style.display = "inline-block";
+        }
+    } catch(e) { alert("連接失敗: " + e.message); }
 }
 
 async function loadLocalFile(lang) {
@@ -73,9 +107,7 @@ async function loadLocalFile(lang) {
         const text = await file.text();
         parseAndRender(text);
         alert(`已載入 data.${lang}.js`);
-    } catch(e) {
-        alert("讀取失敗: " + e.message);
-    }
+    } catch(e) { alert("讀取失敗: " + e.message); }
 }
 
 // --- 檔案載入 (GitHub) ---
@@ -92,28 +124,24 @@ async function loadGithubFile(lang) {
 
     try {
         const res = await fetch(apiUrl, {
-            headers: { 
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
+            headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
         });
-        
         if(!res.ok) throw new Error(`HTTP ${res.status}`);
         
         const data = await res.json();
-        const content = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
+        const content = b64ToUtf8(data.content);
         
         parseAndRender(content);
         alert(`✅ 從 GitHub 載入成功 (data.${lang}.js)`);
-        
     } catch (e) {
+        console.error(e);
         alert("GitHub 讀取失敗: " + e.message);
     }
 }
 
 // --- 儲存邏輯 ---
 async function saveData() {
-    if(!currentData) return alert("沒有資料可存");
+    if(!currentData) return alert("無資料可存");
     const str = JSON.stringify(currentData, null, 4);
     const content = `window.${currentVarName} = ${str};`;
 
@@ -133,10 +161,8 @@ async function saveLocalData(content) {
         const writable = await fileHandle.createWritable();
         await writable.write(content);
         await writable.close();
-        alert(`✅ 本機存檔成功 (data.${currentLang}.js)`);
-    } catch(e) {
-        alert("存檔失敗: " + e.message);
-    }
+        alert("✅ 本機存檔成功");
+    } catch(e) { alert("存檔失敗: " + e.message); }
 }
 
 async function saveGithubData(content) {
@@ -150,53 +176,53 @@ async function saveGithubData(content) {
     if (!token || !user || !repo) return alert('請先設定 GitHub！');
 
     saveBtn.disabled = true;
-    saveBtn.innerText = '⏳ 取得 SHA...';
+    saveBtn.innerText = '⏳ 處理中...';
 
     try {
         const path = `assets/data/data.${currentLang}.js`;
         const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-        const headers = { 
-            'Authorization': `token ${token}`,
-            'Accept': 'application/vnd.github.v3+json'
-        };
+        const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' };
 
         // 1. GET SHA
         const getRes = await fetch(apiUrl, { headers });
-        if(!getRes.ok) throw new Error("無法取得檔案狀態");
-        const fileData = await getRes.json();
+        let sha = null;
+        if(getRes.ok) {
+            const fileData = await getRes.json();
+            sha = fileData.sha;
+        }
 
-        // 2. PUT Update
-        saveBtn.innerText = '⏳ 上傳中...';
+        // 2. PUT
         const encodedContent = btoa(unescape(encodeURIComponent(content)));
         
+        const body = {
+            message: 'Update via Admin',
+            content: encodedContent
+        };
+        if(sha) body.sha = sha;
+
         const putRes = await fetch(apiUrl, {
             method: 'PUT',
             headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                message: 'Update via Admin Panel',
-                content: encodedContent,
-                sha: fileData.sha
-            })
+            body: JSON.stringify(body)
         });
 
         if(!putRes.ok) throw new Error("上傳失敗");
         alert('🎉 成功！GitHub 已更新');
 
     } catch (e) {
-        console.error(e);
-        alert('❌ 錯誤: ' + e.message);
+        alert('錯誤: ' + e.message);
     } finally {
         saveBtn.disabled = false;
         saveBtn.innerText = oldText;
     }
 }
 
-// --- 圖片貼上邏輯 ---
+// --- 圖片貼上 ---
 async function handleImagePaste(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
     let blob = null;
     for (let i=0; i<items.length; i++) {
-        if (items[i].type.indexOf("image") === 0) { blob = items[i].getAsFile(); break; }
+        if (items[i].type.indexOf("image")===0) { blob = items[i].getAsFile(); break; }
     }
     if(!blob) return;
     
@@ -239,14 +265,8 @@ async function uploadImageToGithub(filename, base64) {
     
     const res = await fetch(apiUrl, {
         method: 'PUT',
-        headers: { 
-            'Authorization': `token ${token}`,
-            'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({
-            message: `Upload ${filename}`,
-            content: base64
-        })
+        headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: `Upload ${filename}`, content: base64 })
     });
     if(!res.ok) throw new Error("API Error");
 }
@@ -257,27 +277,33 @@ function insertText(el, text) {
     el.value = el.value.substring(0, start) + text + el.value.substring(end);
 }
 
-// --- 編輯器邏輯 (UI) ---
+// --- 核心：解析與渲染 ---
 function parseAndRender(text) {
-    const match = text.match(/window\.(\w+)\s*=\s*(\{[\s\S]*\});?/);
-    if(match) {
-        currentVarName = match[1];
-        try {
-            currentData = JSON.parse(match[2]);
-            renderTree();
-            document.getElementById('editor-panel').style.display = 'none';
-            document.getElementById('welcome-msg').style.display = 'none';
-        } catch(e) {
-            alert("資料格式錯誤 (JSON Parse Error)");
-        }
-    } else {
-        alert("檔案格式不符");
+    console.log("[Admin] Parsing...");
+    try {
+        const { varName, jsonText } = extractJsonPayload(text);
+        if (varName) currentVarName = varName;
+        currentData = JSON.parse(jsonText);
+        
+        renderTree();
+        
+        const editorPanel = document.getElementById('editor-panel');
+        if(editorPanel) editorPanel.style.display = 'none';
+        
+        const welcomeMsg = document.getElementById('welcome-msg');
+        if(welcomeMsg) welcomeMsg.style.display = 'none';
+
+    } catch(e) {
+        console.error(e);
+        alert(`資料格式錯誤:\n${e.message}`);
     }
 }
 
 function renderTree() {
     const root = document.getElementById('tree-root');
+    if(!root) return;
     root.innerHTML = '';
+    
     if(!currentData.categories) currentData.categories = [];
 
     currentData.categories.forEach((cat, i) => {
@@ -314,50 +340,51 @@ function loadEditor(item, type, arr, idx) {
     document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
     renderTree(); 
 
-    document.getElementById('editor-panel').style.display = 'block';
-    document.getElementById('node-type').textContent = type.toUpperCase();
+    const panel = document.getElementById('editor-panel');
+    if(panel) panel.style.display = 'block';
     
-    document.getElementById('inp-id').value = item.id || '';
-    document.getElementById('inp-title').value = item.title || '';
+    const typeLabel = document.getElementById('node-type');
+    if(typeLabel) typeLabel.textContent = type.toUpperCase();
+    
+    if(document.getElementById('inp-id')) document.getElementById('inp-id').value = item.id || '';
+    if(document.getElementById('inp-title')) document.getElementById('inp-title').value = item.title || '';
     
     const qDiv = document.getElementById('q-fields');
-    if(type === 'q') {
+    if(type === 'q' && qDiv) {
         qDiv.style.display = 'block';
         const c = item.content || {};
         const join = (a) => Array.isArray(a) ? a.join('\n') : (a || "");
         
-        document.getElementById('inp-symptoms').value = join(c.symptoms);
-        document.getElementById('inp-causes').value = join(c.rootCauses);
-        document.getElementById('inp-steps').value = join(c.solutionSteps);
-        
-        // ✨ 新增：讀取關鍵字
-        document.getElementById('inp-keywords').value = join(c.keywords);
-        
-        document.getElementById('inp-notes').value = c.notes || "";
-    } else {
+        if(document.getElementById('inp-symptoms')) document.getElementById('inp-symptoms').value = join(c.symptoms);
+        if(document.getElementById('inp-causes')) document.getElementById('inp-causes').value = join(c.rootCauses);
+        if(document.getElementById('inp-steps')) document.getElementById('inp-steps').value = join(c.solutionSteps);
+        if(document.getElementById('inp-keywords')) document.getElementById('inp-keywords').value = join(c.keywords);
+        if(document.getElementById('inp-notes')) document.getElementById('inp-notes').value = c.notes || "";
+    } else if (qDiv) {
         qDiv.style.display = 'none';
     }
 }
 
 function applyEdit() {
     if(!activeNode) return;
-    activeNode.id = document.getElementById('inp-id').value;
-    activeNode.title = document.getElementById('inp-title').value;
+    if(document.getElementById('inp-id')) activeNode.id = document.getElementById('inp-id').value;
+    if(document.getElementById('inp-title')) activeNode.title = document.getElementById('inp-title').value;
     
-    if(document.getElementById('q-fields').style.display === 'block') {
+    const qDiv = document.getElementById('q-fields');
+    if(qDiv && qDiv.style.display === 'block') {
         if(!activeNode.content) activeNode.content = {};
-        const split = (id) => document.getElementById(id).value.split('\n').filter(x=>x.trim());
+        const split = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value.split('\n').filter(x=>x.trim()) : [];
+        };
         
         activeNode.content.symptoms = split('inp-symptoms');
         activeNode.content.rootCauses = split('inp-causes');
         activeNode.content.solutionSteps = split('inp-steps');
-        
-        // ✨ 新增：儲存關鍵字
         activeNode.content.keywords = split('inp-keywords');
-        
-        activeNode.content.notes = document.getElementById('inp-notes').value;
+        const notesEl = document.getElementById('inp-notes');
+        activeNode.content.notes = notesEl ? notesEl.value : "";
     }
-    
     renderTree();
     alert("修改已暫存");
 }
@@ -371,7 +398,6 @@ function addNode(type) {
     } else if (type === 'sub' && activeNode && activeNode.subcategories) {
         activeNode.subcategories.push({ id:`SUB-${ts}`, title:"New", questions:[] });
     } else if (type === 'q' && activeNode && activeNode.questions) {
-        // ✨ 新增：初始化關鍵字為空陣列
         activeNode.questions.push({ id:`Q-${ts}`, title:"New", content:{symptoms:[],rootCauses:[],solutionSteps:[],keywords:[],notes:""} });
     } else {
         return alert("請先選取正確的父層");
@@ -384,7 +410,139 @@ function deleteNode() {
     if(confirm("確定刪除？")) {
         activeParent.array.splice(activeParent.index, 1);
         activeNode = null;
-        document.getElementById('editor-panel').style.display = 'none';
+        const panel = document.getElementById('editor-panel');
+        if(panel) panel.style.display = 'none';
         renderTree();
     }
+}
+
+// ✨✨✨ 新增功能：CSV 匯出與匯入 ✨✨✨
+
+// 1. 匯出 CSV
+async function exportToCSV() {
+    if (!currentData || !currentData.categories) return alert("沒有資料可匯出");
+    if (!localHandle) return alert("請先連接資料夾");
+
+    const rows = [];
+    // 表頭
+    rows.push(["category_id", "category_title", "sub_id", "sub_title", "question_id", "question_title", "symptoms", "root_causes", "solution_steps", "keywords", "notes"]);
+
+    // 遍歷資料轉為 CSV 行
+    currentData.categories.forEach(cat => {
+        cat.subcategories.forEach(sub => {
+            sub.questions.forEach(q => {
+                const c = q.content || {};
+                const join = (arr) => Array.isArray(arr) ? arr.join('||') : ""; // 用 || 分隔多行
+                
+                rows.push([
+                    cat.id, cat.title,
+                    sub.id, sub.title,
+                    q.id, q.title,
+                    join(c.symptoms),
+                    join(c.rootCauses),
+                    join(c.solutionSteps),
+                    join(c.keywords),
+                    c.notes || ""
+                ]);
+            });
+        });
+    });
+
+    // 產生 CSV 字串 (使用 PapaParse)
+    const csv = Papa.unparse(rows);
+    
+    // 寫入檔案
+    try {
+        const assets = await localHandle.getDirectoryHandle('assets');
+        const dataDir = await assets.getDirectoryHandle('data');
+        const fileName = `export_${currentLang}_${Date.now()}.csv`;
+        const fileHandle = await dataDir.getFileHandle(fileName, {create: true});
+        const writable = await fileHandle.createWritable();
+        
+        // 加入 BOM 以支援 Excel 中文顯示
+        await writable.write(new Uint8Array([0xEF, 0xBB, 0xBF])); 
+        await writable.write(csv);
+        await writable.close();
+        
+        alert(`✅ 匯出成功！\n檔案已儲存至 assets/data/${fileName}`);
+    } catch(e) {
+        alert("匯出失敗: " + e.message);
+    }
+}
+
+// 2. 匯入 CSV
+async function importFromCSV(input) {
+    const file = input.files[0];
+    if(!file) return;
+
+    if (!confirm("⚠️ 匯入 CSV 將會「完全覆蓋」目前編輯器中的資料。\n確定要繼續嗎？")) {
+        input.value = ""; // 重置 input
+        return;
+    }
+
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+            try {
+                const rows = results.data;
+                const newCategories = [];
+                const catMap = {}; // 用來快速找 Category
+                const subMap = {}; // 用來快速找 Subcategory
+
+                rows.forEach(row => {
+                    // 略過空行或標題行 (PapaParse 已處理 header, 但防呆一下)
+                    if (!row.category_id || !row.question_id) return;
+
+                    // 1. 處理 Category
+                    let cat = catMap[row.category_id];
+                    if (!cat) {
+                        cat = { id: row.category_id, title: row.category_title, subcategories: [] };
+                        catMap[row.category_id] = cat;
+                        newCategories.push(cat);
+                    }
+
+                    // 2. 處理 Subcategory
+                    // Subcategory ID 必須唯一，為了保險起見，可以結合 Cat ID 做 Key
+                    const subKey = row.category_id + "_" + row.sub_id;
+                    let sub = subMap[subKey];
+                    if (!sub) {
+                        sub = { id: row.sub_id, title: row.sub_title, questions: [] };
+                        subMap[subKey] = sub;
+                        cat.subcategories.push(sub);
+                    }
+
+                    // 3. 處理 Question
+                    const split = (str) => str ? str.split('||') : [];
+                    
+                    // 欄位名稱對應 (CSV header -> JSON key)
+                    // 注意 PapaParse 解析出來的 key 是根據 CSV 第一列
+                    // 這裡假設 CSV 第一列是我們 export 出來的那些名稱
+                    const q = {
+                        id: row.question_id,
+                        title: row.question_title,
+                        content: {
+                            symptoms: split(row.symptoms),
+                            rootCauses: split(row.root_causes),
+                            solutionSteps: split(row.solution_steps),
+                            keywords: split(row.keywords),
+                            notes: row.notes || ""
+                        }
+                    };
+                    sub.questions.push(q);
+                });
+
+                // 更新當前資料
+                currentData.categories = newCategories;
+                renderTree();
+                alert("✅ CSV 匯入成功！請檢查資料並記得按「儲存」。");
+
+            } catch (e) {
+                console.error(e);
+                alert("CSV 解析失敗: " + e.message);
+            } finally {
+                input.value = ""; // 重置 input 以便下次能選同個檔案
+            }
+        }
+    });
 }
