@@ -9,11 +9,10 @@ body {
     display: flex; 
     height: 100vh; 
     overflow: hidden; 
-    /* ✨ 關鍵修復：預設為垂直排列 (為了前台 Header + Content) */
-    flex-direction: column; 
+    flex-direction: column; /* 前台預設垂直排列 */
 }
 
-/* ✨ 後台專用模式：強制左右排列 */
+/* ✨ 後台專用模式：強制左右排列 (三欄) */
 body.admin-mode {
     flex-direction: row; 
 }
@@ -24,17 +23,10 @@ body.admin-mode {
    2. 前台專用佈局 (Frontend Layout)
    ========================================= */
 
-/* 頂部導覽列 */
 header { 
-    background-color: #2c3e50; 
-    color: #ecf0f1; 
-    padding: 15px 20px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between; 
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-    flex-shrink: 0; /* 防止被壓縮 */
-    z-index: 10;
+    background-color: #2c3e50; color: #ecf0f1; padding: 15px 20px; 
+    display: flex; align-items: center; justify-content: space-between; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-shrink: 0; z-index: 10;
 }
 header h1 { margin: 0; font-size: 1.5rem; }
 
@@ -42,46 +34,24 @@ header h1 { margin: 0; font-size: 1.5rem; }
 .lang-switch button:hover { background: #ecf0f1; color: #2c3e50; }
 .lang-switch button.active { background: #3498db; border-color: #3498db; color: white; }
 
-/* 前台主容器 (包住側邊欄、列表、內容) */
-.container { 
-    display: flex; 
-    flex: 1; 
-    overflow: hidden; 
-    flex-direction: row; /* 內部維持左右排列 */
+.container { display: flex; flex: 1; overflow: hidden; flex-direction: row; }
+
+/* 側邊欄 (前台與後台共用樣式基礎) */
+.sidebar, #admin-sidebar { 
+    width: 280px; background-color: #fff; border-right: 1px solid #ddd; 
+    overflow-y: auto; padding: 10px; display: flex; flex-direction: column; flex-shrink: 0; 
 }
 
-/* 前台側邊欄 (分類樹) */
-.sidebar { 
-    width: 280px; 
-    background-color: #fff; 
-    border-right: 1px solid #ddd; 
-    overflow-y: auto; 
-    padding: 10px; 
-    display: flex; 
-    flex-direction: column; 
-    flex-shrink: 0; 
-}
-
-/* 前台問題列表欄 */
+/* 問題列表欄 (前台與後台共用) */
 .question-list-panel { 
-    width: 320px; 
-    background-color: #fcfcfc; 
-    border-right: 1px solid #ddd; 
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column; 
-    flex-shrink: 0;
+    width: 320px; background-color: #fcfcfc; border-right: 1px solid #ddd; 
+    overflow-y: auto; display: flex; flex-direction: column; flex-shrink: 0;
 }
 
-/* 前台內容顯示區 */
-.content-panel { 
-    flex: 1; 
-    padding: 30px 40px; 
-    overflow-y: auto; 
-    background-color: #fff; 
-}
+/* 內容顯示區 */
+.content-panel { flex: 1; padding: 30px 40px; overflow-y: auto; background-color: #fff; }
 
-/* 前台元件樣式 */
+/* 前台元件 */
 .category-item { cursor: pointer; padding: 10px; border-radius: 4px; margin-bottom: 2px; transition: 0.2s; font-weight: 500; color: #444; }
 .category-item:hover { background-color: #f1f1f1; }
 .category-item.active { background-color: #e3f2fd; color: #007bff; border-left: 4px solid #007bff; }
@@ -98,6 +68,7 @@ header h1 { margin: 0; font-size: 1.5rem; }
 
 .q-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
 .q-item:hover { background-color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.q-item.active { background-color: #fff; border-left: 4px solid #2ecc71; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
 .q-title { font-weight: bold; margin-bottom: 5px; display: block; }
 .q-id { font-size: 0.8rem; color: #999; background: #eee; padding: 2px 6px; border-radius: 4px; }
 
@@ -110,47 +81,24 @@ header h1 { margin: 0; font-size: 1.5rem; }
 .step-item { margin-bottom: 8px; line-height: 1.6; position: relative; padding-left: 20px; }
 .step-item::before { content: "•"; position: absolute; left: 0; color: #27ae60; font-weight: bold; }
 
-
 /* =========================================
    3. 後台專用佈局 (Admin Layout)
    ========================================= */
 
-/* 後台側邊欄 (使用 aside 標籤) */
-aside#admin-sidebar { 
-    width: 300px; /* 已縮窄 */
-    background: #fff; 
-    border-right: 1px solid #ddd; 
-    display: flex; 
-    flex-direction: column; 
-    flex-shrink: 0; 
-}
+/* 後台第一欄：側邊欄 (設定 + 分類樹) */
+aside#admin-sidebar { width: 300px; }
 
-.sidebar-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; }
-#tree-wrapper { flex: 1; overflow-y: auto; }
+/* 後台第二欄：問題列表 */
+#admin-list-panel { width: 320px; background-color: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
 
-/* 後台主內容區 */
-main#admin-main { 
-    flex: 1; 
-    padding: 30px; 
-    overflow-y: auto; 
-    background: #fdfdfd; 
-}
+/* 後台第三欄：編輯區 */
+main#admin-main { flex: 1; padding: 20px; overflow-y: auto; background: #fdfdfd; }
 
-/* 後台工具列 (Main Toolbar) */
-.main-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background: #fff;
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
+/* 後台工具列 */
+.main-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .group-left, .group-right { display: flex; gap: 10px; }
 
-/* 後台面板與頁籤 */
+/* 後台面板 */
 .mode-tabs { display: flex; border-bottom: 1px solid #ddd; }
 .tab-btn { flex: 1; padding: 10px; border:none; background:#f1f1f1; cursor:pointer; }
 .tab-btn.active { background:#fff; color:#0066cc; border-bottom:2px solid #0066cc; font-weight:bold; }
@@ -158,11 +106,17 @@ main#admin-main {
 .mode-panel.active { display: block; }
 .btn-group { display: flex; gap: 5px; margin-top: 5px; }
 
+/* 後台樹狀節點樣式 (只顯示 Cat/Sub) */
+.tree-item { padding: 8px 10px; cursor: pointer; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+.tree-item:hover { background-color: #e9ecef; }
+.tree-item.active { background-color: #007bff; color: white; }
+.tree-item.sub-node { margin-left: 20px; font-size: 0.95em; color: #555; }
+.tree-item.sub-node.active { color: white; }
+
 /* =========================================
    4. 通用元件 (Common Components)
    ========================================= */
 
-/* 按鈕樣式 */
 button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
 .btn-admin, .btn-back { display: block; text-align: center; text-decoration: none; color: #555; background: #eee; padding: 5px; border-radius: 4px; font-size: 14px; margin-bottom: 10px; }
 .btn-admin:hover, .btn-back:hover { background: #ddd; }
@@ -176,58 +130,25 @@ button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
 .btn-red { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; }
 .btn-red:hover { background: #c82333; }
 
-/* 後台管理 - 回前台按鈕 */
-.btn-back-home {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    text-decoration: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    transition: background 0.2s;
-}
+.btn-back-home { background-color: rgba(255, 255, 255, 0.2); color: white; text-decoration: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; transition: background 0.2s; }
 .btn-back-home:hover { background-color: rgba(255, 255, 255, 0.4); }
 
-/* 關鍵字樣式 */
 .keywords-box { margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.9em; color: #666; }
 .keyword-tag { background: #f1f1f1; padding: 3px 8px; border-radius: 4px; margin-right: 5px; color: #555; border: 1px solid #ddd; }
 
-/* 圖片容器與樣式 */
-.img-container { 
-    display: inline-block;
-    vertical-align: top;
-    margin: 10px 5px;
-    transition: all 0.3s ease; 
-}
+.img-container { display: inline-block; vertical-align: top; margin: 10px 5px; transition: all 0.3s ease; }
 .img-container img { border: 1px solid #ddd; border-radius: 4px; cursor: zoom-in; display: block; transition: max-width 0.3s ease, max-height 0.3s ease; }
 .img-container img:hover { opacity: 0.9; }
 
-/* 圖片尺寸控制類別 */
 .img-size-small img { max-width: 200px; max-height: 200px; }
 .img-size-medium img { max-width: 500px; max-height: 400px; }
 .img-size-large img { max-width: 100%; max-height: 800px; }
 
-/* Lightbox (圖片放大預覽) */
 #lightbox { position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
 #lightbox.active { opacity: 1; visibility: visible; }
 #lightbox img { max-width: 90%; max-height: 90%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 #lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; cursor: pointer; }
 
-/* 輸入框 */
 input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
 textarea { resize: vertical; min-height: 80px; }
 select { width: 100%; padding: 8px; margin-bottom: 10px; }
-
-/* 後台目錄樹 (Tree) 樣式 */
-.tree-item { padding: 8px 10px; cursor: pointer; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
-.tree-item:hover { background-color: #e9ecef; }
-.tree-item.active { background-color: #007bff; color: white; }
-
-/* TOC 目錄 (Sidebar Content in Admin - if used) */
-.toc-item { padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 500; user-select: none; transition: background 0.2s; }
-.toc-item:hover { background: #f0f0f0; }
-.toc-item.cat { font-weight: bold; background: #f8f9fa; border-bottom: 1px solid #eee; }
-.toc-item.sub { padding-left: 25px; color: #555; border-bottom: 1px solid #f9f9f9; }
-.hidden { display: none; }
-.arrow { transition: transform 0.3s ease; font-size: 0.8em; color: #999; }
-.toc-item.expanded .arrow { transform: rotate(180deg); }
