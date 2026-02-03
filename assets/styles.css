@@ -27,7 +27,7 @@ main { flex: 1; padding: 30px; overflow-y: auto; background: #fdfdfd; }
 .section h3 { background: #eef; color: #0056b3; padding: 5px 10px; border-radius: 4px; }
 .note { background: #fff3cd; padding: 15px; border-radius: 4px; color: #856404; margin-top: 20px; }
 
-/* ✨ 關鍵字樣式 (新增) */
+/* 關鍵字樣式 */
 .keywords-box { margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.9em; color: #666; }
 .keyword-tag { background: #f1f1f1; padding: 3px 8px; border-radius: 4px; margin-right: 5px; color: #555; border: 1px solid #ddd; }
 
