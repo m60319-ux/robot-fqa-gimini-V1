@@ -30,27 +30,30 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initLightbox();
 
+    // 🚀 動態載入資料 (自動破除快取)
     loadDataScripts().then(() => {
         initApp();
     });
 });
 
+// 核心功能：動態插入 script 標籤並加上時間戳記
 function loadDataScripts() {
     const langs = ['zh', 'cn', 'en', 'th'];
-    const version = new Date().getTime(); 
+    const version = new Date().getTime(); // 使用當下時間作為版本號
     
     console.log(`[App] Auto-loading data with version: ${version}`);
 
     const promises = langs.map(lang => {
         return new Promise((resolve) => {
             const script = document.createElement('script');
+            // 關鍵：加上 ?v=... 參數
             script.src = `assets/data/data.${lang}.js?v=${version}`;
             script.onload = () => {
                 console.log(`[App] Loaded data.${lang}.js`);
                 resolve();
             };
             script.onerror = () => {
-                console.warn(`[App] Failed to load data.${lang}.js`);
+                console.warn(`[App] Failed to load data.${lang}.js (File might not exist yet)`);
                 resolve();
             };
             document.body.appendChild(script);
@@ -66,6 +69,7 @@ function initApp() {
         en: window.FAQ_DATA_EN, th: window.FAQ_DATA_TH
     };
 
+    // 檢查是否有載入任何資料
     const base = dataMap.zh || dataMap.en || dataMap["zh-CN"] || dataMap.th;
     
     if (!base) {
@@ -90,10 +94,13 @@ function initApp() {
     }
     window.addEventListener('hashchange', renderCurrentHash);
     
+    // ✅ 恢復目錄渲染
     renderTOC(STATE.mergedData.categories);
+    
     renderCurrentHash();
 }
 
+// 多語系合併
 function mergeData(map) {
     const base = map.zh || map.en || map["zh-CN"] || map.th;
     const categories = JSON.parse(JSON.stringify(base.categories));
@@ -108,7 +115,7 @@ function mergeData(map) {
                     node.title[lang] = found.title;
                     if(level==='q') {
                         node.content = node.content || {};
-                        // ✨ 新增 keywords 欄位合併
+                        // ✨ 確保 keywords 欄位也被合併
                         ['symptoms','rootCauses','solutionSteps','notes','keywords'].forEach(k => {
                             if(!node.content[k]) node.content[k]={};
                             if(Array.isArray(node.content[k])) node.content[k]={};
@@ -142,6 +149,7 @@ function findNode(nodes, id, level) {
     return null;
 }
 
+// Lightbox
 function initLightbox() {
     const lightbox = document.createElement('div');
     lightbox.id = 'lightbox';
@@ -164,6 +172,7 @@ function openLightbox(src) {
     lb.classList.add('active');
 }
 
+// 更新圖片尺寸
 function updateAllImagesSize() {
     const containers = document.querySelectorAll('.img-container');
     containers.forEach(div => {
@@ -172,6 +181,7 @@ function updateAllImagesSize() {
     });
 }
 
+// 圖片解析
 function parseContent(text) {
     if (!text) return "";
     let safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -188,7 +198,7 @@ function renderList(label, obj) {
     return `<div class="section"><h3>${label}</h3><ul>${list.map(i=>`<li>${parseContent(i)}</li>`).join('')}</ul></div>`;
 }
 
-// ✨ 新增：渲染關鍵字區域
+// ✨ 渲染關鍵字 (新增)
 function renderKeywords(obj) {
     const list = obj?.[STATE.currentLang];
     if (!list || !list.length) return '';
@@ -221,6 +231,7 @@ function renderCurrentHash() {
     }
 }
 
+// 渲染目錄函式 (預設隱藏子層級)
 function renderTOC(nodes) {
     let html='<ul class="toc-root">';
     nodes.forEach(cat => {
@@ -257,6 +268,7 @@ function renderTOC(nodes) {
     document.getElementById('sidebar-content').innerHTML = html+'</ul>';
 }
 
+// 收折切換函式
 function toggle(el) { 
     const list = el.nextElementSibling;
     if(list) {
@@ -265,6 +277,7 @@ function toggle(el) {
     }
 }
 
+// 高亮並自動展開目錄
 function highlightSidebar(id) {
     document.querySelectorAll('.toc-link').forEach(el => el.classList.remove('active'));
     const link = document.querySelector(`.toc-link[data-id="${id}"]`);
@@ -281,38 +294,71 @@ function highlightSidebar(id) {
     }
 }
 
+// ✨ 修改：初始化搜尋 (加入 keywords 欄位)
 function initSearch(nodes) {
     if (typeof Fuse === 'undefined') return;
     const list = [];
     nodes.forEach(cat => {
         cat.subcategories.forEach(sub => {
             sub.questions.forEach(q => {
+                // 將多語系物件攤平為字串，方便搜尋
+                const titleStr = Object.values(q.title || {}).join(' ');
+                const content = q.content || {};
+                
+                // 把所有欄位轉成 JSON 字串，包含 keywords
+                const contentStr = JSON.stringify(content);
+
                 list.push({
                     id: q.id,
-                    title: Object.values(q.title || {}).join(' '), 
-                    content: JSON.stringify(q.content || {})
+                    title: titleStr,
+                    content: contentStr,
+                    // 特別把 keywords 獨立出來增加權重 (選用，但 Fuse 也可以直接搜 content)
+                    keywords: Object.values(content.keywords || {}).flat().join(' ')
                 });
             });
         });
     });
-    STATE.fuse = new Fuse(list, { keys: ['id', 'title', 'content'], threshold: 0.3 });
+    
+    // 設定 Fuse 選項，加入 keywords
+    STATE.fuse = new Fuse(list, { 
+        keys: [
+            { name: 'id', weight: 0.2 },
+            { name: 'title', weight: 0.3 },
+            { name: 'keywords', weight: 0.4 }, // 關鍵字權重高
+            { name: 'content', weight: 0.1 }
+        ], 
+        threshold: 0.3 
+    });
 }
 
+// 搜尋處理
 function handleSearch(val) {
     val = val.trim();
+    const links = document.querySelectorAll('.toc-link');
+    
     if(!val) {
-        renderTOC(STATE.mergedData.categories); 
+        // 清空搜尋時，恢復所有項目的顯示，並保留原有的收折狀態
+        // 簡單做法是直接重繪 TOC (會重置收折)，或是只處理 display
+        // 為了使用者體驗，這裡選擇只隱藏不符合的 li
+        links.forEach(l => {
+            const li = l.closest('li');
+            li.style.display = '';
+            // 恢復收折狀態可能比較複雜，這裡讓它們保持原本的狀態
+            // 或者可以選擇重置：
+            // renderTOC(STATE.mergedData.categories);
+        });
         return;
     }
     
-    const links = document.querySelectorAll('.toc-link');
     const res = STATE.fuse.search(val).map(r => r.item.id);
     
     links.forEach(l => {
         const match = res.includes(l.getAttribute('data-id'));
-        const li = l.closest('li'); 
-        if(match) {
+        const li = l.closest('li'); // Question 的 li
+        
+        if (match) {
             li.style.display = '';
+            // 自動展開父層
             let parent = li.closest('ul');
             while(parent && !parent.classList.contains('toc-root')) {
                 parent.classList.remove('hidden');
