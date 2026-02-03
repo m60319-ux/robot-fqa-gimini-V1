@@ -1,4 +1,4 @@
-// assets/admin.js - V3.4 CSV GitHub Support
+// assets/admin.js - V3.5 CSV GitHub Import/Export
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -273,7 +273,7 @@ function insertText(el, text) {
     el.value = el.value.substring(0, start) + text + el.value.substring(end);
 }
 
-// --- 核心：解析與渲染 ---
+// --- 編輯器邏輯 (UI) ---
 function parseAndRender(text) {
     console.log("[Admin] Parsing...");
     try {
@@ -499,7 +499,52 @@ async function exportToCSV() {
     }
 }
 
-// 2. 匯入 CSV (通用)
+// 2. 匯入 CSV (共用邏輯)
+function parseCsvRows(rows) {
+    const newCategories = [];
+    const catMap = {}; 
+    const subMap = {}; 
+
+    rows.forEach(row => {
+        if (!row.category_id || !row.question_id) return;
+
+        let cat = catMap[row.category_id];
+        if (!cat) {
+            cat = { id: row.category_id, title: row.category_title, subcategories: [] };
+            catMap[row.category_id] = cat;
+            newCategories.push(cat);
+        }
+
+        const subKey = row.category_id + "_" + row.sub_id;
+        let sub = subMap[subKey];
+        if (!sub) {
+            sub = { id: row.sub_id, title: row.sub_title, questions: [] };
+            subMap[subKey] = sub;
+            cat.subcategories.push(sub);
+        }
+
+        const split = (str) => str ? str.split('||') : [];
+        
+        const q = {
+            id: row.question_id,
+            title: row.question_title,
+            content: {
+                symptoms: split(row.symptoms),
+                rootCauses: split(row.root_causes),
+                solutionSteps: split(row.solution_steps),
+                keywords: split(row.keywords),
+                notes: row.notes || ""
+            }
+        };
+        sub.questions.push(q);
+    });
+
+    currentData.categories = newCategories;
+    renderTree();
+    alert("✅ CSV 匯入成功！請檢查資料並記得按「儲存」。");
+}
+
+// 本機 CSV 匯入
 async function importFromCSV(input) {
     const file = input.files[0];
     if(!file) return;
@@ -514,49 +559,7 @@ async function importFromCSV(input) {
         skipEmptyLines: true,
         complete: function(results) {
             try {
-                const rows = results.data;
-                const newCategories = [];
-                const catMap = {}; 
-                const subMap = {}; 
-
-                rows.forEach(row => {
-                    if (!row.category_id || !row.question_id) return;
-
-                    let cat = catMap[row.category_id];
-                    if (!cat) {
-                        cat = { id: row.category_id, title: row.category_title, subcategories: [] };
-                        catMap[row.category_id] = cat;
-                        newCategories.push(cat);
-                    }
-
-                    const subKey = row.category_id + "_" + row.sub_id;
-                    let sub = subMap[subKey];
-                    if (!sub) {
-                        sub = { id: row.sub_id, title: row.sub_title, questions: [] };
-                        subMap[subKey] = sub;
-                        cat.subcategories.push(sub);
-                    }
-
-                    const split = (str) => str ? str.split('||') : [];
-                    
-                    const q = {
-                        id: row.question_id,
-                        title: row.question_title,
-                        content: {
-                            symptoms: split(row.symptoms),
-                            rootCauses: split(row.root_causes),
-                            solutionSteps: split(row.solution_steps),
-                            keywords: split(row.keywords),
-                            notes: row.notes || ""
-                        }
-                    };
-                    sub.questions.push(q);
-                });
-
-                currentData.categories = newCategories;
-                renderTree();
-                alert("✅ CSV 匯入成功！請檢查資料並記得按「儲存」。");
-
+                parseCsvRows(results.data);
             } catch (e) {
                 console.error(e);
                 alert("CSV 解析失敗: " + e.message);
@@ -565,4 +568,55 @@ async function importFromCSV(input) {
             }
         }
     });
+}
+
+// GitHub CSV 匯入 (✨ 新增)
+async function loadCsvFromGithub() {
+    const token = document.getElementById('gh_token').value.trim();
+    const user = document.getElementById('gh_user').value.trim();
+    const repo = document.getElementById('gh_repo').value.trim();
+
+    if (!token || !user || !repo) return alert("請先設定 GitHub 資訊");
+
+    if (!confirm("⚠️ 從 GitHub 匯入 CSV 將會「完全覆蓋」目前編輯器中的資料。\n確定要繼續嗎？")) return;
+
+    try {
+        // 1. 列出 assets/data/ 下的所有檔案
+        const listUrl = `https://api.github.com/repos/${user}/${repo}/contents/assets/data`;
+        const listRes = await fetch(listUrl, {
+            headers: { 'Authorization': `token ${token}` }
+        });
+        
+        if(!listRes.ok) throw new Error("無法讀取檔案列表");
+        const files = await listRes.json();
+        
+        // 2. 篩選 CSV 並找出最新的 (根據檔名排序)
+        const csvFiles = files.filter(f => f.name.endsWith('.csv')).sort((a, b) => b.name.localeCompare(a.name));
+        
+        if(csvFiles.length === 0) return alert("在 GitHub 上找不到任何 CSV 檔案");
+        
+        const latestFile = csvFiles[0];
+        
+        // 3. 確認是否載入最新檔
+        if(!confirm(`找到最新的 CSV 檔案：\n${latestFile.name}\n\n是否載入？`)) return;
+        
+        // 4. 下載內容
+        const contentRes = await fetch(latestFile.url, {
+            headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }
+        });
+        const contentData = await contentRes.json();
+        const csvContent = b64ToUtf8(contentData.content);
+        
+        // 5. 解析
+        Papa.parse(csvContent, {
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                parseCsvRows(results.data);
+            }
+        });
+
+    } catch (e) {
+        alert("GitHub CSV 載入失敗: " + e.message);
+    }
 }
