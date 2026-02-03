@@ -17,14 +17,40 @@ aside { width: 320px; background: #fff; border-right: 1px solid #ddd; display: f
 .mode-panel.active { display: block; }
 .btn-group { display: flex; gap: 5px; margin-top: 5px; }
 
+/* ✨✨✨ 新增：頂部工具列樣式 (移至主畫面) ✨✨✨ */
+.main-toolbar {
+    display: flex;
+    justify-content: space-between; /* 左右推開 */
+    align-items: center;
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px; /* 與編輯區保持距離 */
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.group-left, .group-right {
+    display: flex;
+    gap: 10px; /* 按鈕間距 */
+}
+
 /* 按鈕樣式 */
 .btn-admin, .btn-back { display: block; text-align: center; text-decoration: none; color: #555; background: #eee; padding: 5px; border-radius: 4px; font-size: 14px; margin-bottom: 10px; }
 .btn-admin:hover, .btn-back:hover { background: #ddd; }
-.btn-blue { background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-.btn-green { background: #28a745; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-.btn-gray { background: #6c757d; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 
-/* ✨ 新增：後台管理 - 回前台按鈕樣式 (原本在 HTML 內，移至此統一管理) */
+/* 通用按鈕優化 */
+button { font-size: 14px; transition: background 0.2s; }
+.btn-blue { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-blue:hover { background: #0069d9; }
+.btn-green { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-green:hover { background: #218838; }
+.btn-gray { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-gray:hover { background: #5a6268; }
+/* 新增紅色按鈕 */
+.btn-red { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-red:hover { background: #c82333; }
+
+/* ✨ 新增：後台管理 - 回前台按鈕樣式 */
 .btn-back-home {
     background-color: rgba(255, 255, 255, 0.2);
     color: white;
