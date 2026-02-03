@@ -105,7 +105,7 @@ window.FAQ_DATA_ZH = {
                                 ],
                                 "notes": "",
                                 "keywords": [
-                                    "AL044/驅動器"
+                                    "AL044、驅動器"
                                 ]
                             }
                         }
