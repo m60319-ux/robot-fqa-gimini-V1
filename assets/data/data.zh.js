@@ -106,7 +106,8 @@ window.FAQ_DATA_ZH = {
                                 "notes": "",
                                 "keywords": [
                                     "AL044",
-                                    "驅動器"
+                                    "驅動器",
+                                    "ABC"
                                 ]
                             }
                         }
