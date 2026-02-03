@@ -1,0 +1,9 @@
+﻿category_id,category_title,sub_id,sub_title,question_id,question_title,symptoms,root_causes,solution_steps,keywords,notes
+CAT-01,硬體問題,SUB-01,馬達異常,Q-001,無法過電,燈號未亮,保險絲斷||{{img:assets/images/img_1769763508765.png}},更換保險絲||{{img:assets/images/img_1769763514401.png}},AL001,"注意安全
+{{img:assets/images/img_1769763517692.png}}"
+CAT-01,硬體問題,SUB-02,驅動器異常,Q-002,驅動器輸出電流過大,驅動器輸出電流過大,通常發生此狀況馬達的動力線(UVW)可能有問題,,AL083,
+CAT-01,硬體問題,SUB-02,驅動器異常,Q-003,六軸AL830,六軸J5、J6發生830，內部通訊異常,123,J5、J6 P3-09||0x3511改為0x3555,AL830,
+CAT-01,硬體問題,SUB-02,驅動器異常,Q-004,AL044 驅動器功能使用率警告,驅動器功能使用率警告||Date        Time    Type    No.    Error Code    Description    描述||2024-12-09   12:50:19    Axis    Joint-5    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令||2024-12-09   12:50:19    Axis    Joint-4    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令||2024-12-09   12:50:19    Axis    Joint-3    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令||2024-12-09   12:50:19    Axis    Joint-2    AL802    Give motion command when the alarm occurs    有異警發生又下運動命令||2024-12-09   12:50:19    Axis    Joint-6    AL044    Warning of Servo Drive function overload    驅動器功能使用率警告||2024-12-09   12:50:19    Axis    Joint-1    AL813    Axis error during interpretation of motion command    成員軸發生錯誤||2024-12-09   12:50:19    Group    1    E1.813    Axis error during interpretation of motion command    成員軸發生錯誤,該軸P2-66出廠預設值改為0x034。,該軸P2-66出廠預設值改為0x034。,AL044||驅動器||ABC,
+CAT-02,軟體問題,SUB-02,操作異常,Q-005,Modbus啟動專案無法運行,用Modbus 0X228，專案還是無法啟動,,查看DI 6、7是不是STOP，是的話就無法啟動,Modbus,
+CAT-06,,SUB-02,,Q-006,,,,,,
+CAT-07,,SUB-02,,Q-007,,,,,,
