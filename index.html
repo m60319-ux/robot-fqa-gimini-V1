@@ -3,45 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robot FAQ System</title>
+    <title>機器人故障排除知識庫</title>
     <link rel="stylesheet" href="assets/styles.css">
-    <link rel="icon" href="data:,">
-    
-    <!-- 1. 載入第三方庫 (搜尋引擎) -->
+    <!-- 引入 Fuse.js 用於模糊搜尋 -->
     <script src="assets/libs/fuse.min.js"></script>
 </head>
 <body>
 
-    <aside id="sidebar">
-        <div class="sidebar-header">
-            <!-- 後台入口按鈕 -->
-            <div class="admin-entry">
-                <a href="admin.html" class="btn-admin">⚙️ 進入管理後台</a>
+<header>
+    <div style="display:flex; align-items:center;">
+        <span style="font-size:24px; margin-right:10px;">🤖</span>
+        <h1>機器人故障排除助手</h1>
+    </div>
+    <div class="lang-switch">
+        <button onclick="setLang('zh')" id="btn-zh" class="active">繁中</button>
+        <button onclick="setLang('cn')" id="btn-cn">简中</button>
+        <button onclick="setLang('en')" id="btn-en">EN</button>
+        <button onclick="setLang('th')" id="btn-th">ไทย</button>
+    </div>
+</header>
+
+<div class="container">
+    <!-- 側邊欄：分類樹 -->
+    <div class="sidebar" id="sidebar">
+        <!-- JS 動態生成 -->
+    </div>
+
+    <!-- 中間欄：問題列表與搜尋 -->
+    <div class="question-list-panel">
+        <div class="search-box">
+            <input type="text" id="search-input" placeholder="🔍 搜尋代碼、關鍵字...">
+        </div>
+        <div id="question-list">
+            <div style="padding:20px; text-align:center; color:#999;">
+                請選擇左側分類<br>或輸入關鍵字搜尋
             </div>
-
-            <select id="lang-select">
-                <option value="zh">繁體中文</option>
-                <option value="zh-CN">简体中文</option>
-                <option value="en">English</option>
-                <option value="th">ไทย</option>
-            </select>
-            <input type="text" id="search-input" placeholder="搜尋關鍵字...">
         </div>
-        <div id="error-message"></div>
-        <nav id="sidebar-content"></nav>
-    </aside>
+    </div>
 
-    <main id="main-content">
-        <div class="empty-state">
-            <p>請點選左側目錄選擇問題</p>
-            <small>Select a question from the sidebar</small>
+    <!-- 右側欄：詳細內容 -->
+    <div class="content-panel" id="content-display">
+        <div style="text-align:center; margin-top:100px; color:#aaa;">
+            <h2>👋 歡迎使用知識庫</h2>
+            <p>請點選問題以查看詳細排查步驟</p>
         </div>
-    </main>
+    </div>
+</div>
 
-    <!-- ⚠️ 修改處：原本在這裡的 4 行 data.xx.js 已經被移除 -->
-    <!-- 現在全部交由 app.js 自動載入，以確保資料永遠最新 -->
-    
-    <!-- 3. 載入前台邏輯 -->
-    <script src="assets/app.js"></script>
+<!-- 全螢幕圖片容器 -->
+<div class="fullscreen-overlay" id="fs-overlay" onclick="closeFullscreen()">
+    <img id="fs-img" src="">
+</div>
+
+<!-- 載入資料檔 (預設繁中) -->
+<script src="assets/data/data.zh.js"></script>
+<script src="assets/data/data.cn.js"></script>
+<script src="assets/data/data.en.js"></script>
+<script src="assets/data/data.th.js"></script>
+
+<!-- 主程式 -->
+<script src="assets/app.js"></script>
+
 </body>
 </html>
