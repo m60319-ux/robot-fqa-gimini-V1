@@ -1,4 +1,6 @@
-/* 基礎設定 */
+/* =========================================
+   1. 基礎設定 (Base)
+   ========================================= */
 body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
     margin: 0; 
@@ -7,23 +9,148 @@ body {
     display: flex; 
     height: 100vh; 
     overflow: hidden; 
-    flex-direction: column; /* ✨ 修復：前台預設為垂直排列 (Header 在上，內容在下) */
+    /* ✨ 關鍵修復：預設為垂直排列 (為了前台 Header + Content) */
+    flex-direction: column; 
 }
 
-/* ✨ 新增：後台專用模式 (強制左右排列) */
+/* ✨ 後台專用模式：強制左右排列 */
 body.admin-mode {
     flex-direction: row; 
 }
 
-/* 側邊欄 (前台預設) */
-aside { width: 320px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; flex-shrink: 0; }
+* { box-sizing: border-box; }
+
+/* =========================================
+   2. 前台專用佈局 (Frontend Layout)
+   ========================================= */
+
+/* 頂部導覽列 */
+header { 
+    background-color: #2c3e50; 
+    color: #ecf0f1; 
+    padding: 15px 20px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+    flex-shrink: 0; /* 防止被壓縮 */
+    z-index: 10;
+}
+header h1 { margin: 0; font-size: 1.5rem; }
+
+.lang-switch button { background: none; border: 1px solid #ecf0f1; color: #ecf0f1; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 5px; transition: 0.2s; }
+.lang-switch button:hover { background: #ecf0f1; color: #2c3e50; }
+.lang-switch button.active { background: #3498db; border-color: #3498db; color: white; }
+
+/* 前台主容器 (包住側邊欄、列表、內容) */
+.container { 
+    display: flex; 
+    flex: 1; 
+    overflow: hidden; 
+    flex-direction: row; /* 內部維持左右排列 */
+}
+
+/* 前台側邊欄 (分類樹) */
+.sidebar { 
+    width: 280px; 
+    background-color: #fff; 
+    border-right: 1px solid #ddd; 
+    overflow-y: auto; 
+    padding: 10px; 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0; 
+}
+
+/* 前台問題列表欄 */
+.question-list-panel { 
+    width: 320px; 
+    background-color: #fcfcfc; 
+    border-right: 1px solid #ddd; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0;
+}
+
+/* 前台內容顯示區 */
+.content-panel { 
+    flex: 1; 
+    padding: 30px 40px; 
+    overflow-y: auto; 
+    background-color: #fff; 
+}
+
+/* 前台元件樣式 */
+.category-item { cursor: pointer; padding: 10px; border-radius: 4px; margin-bottom: 2px; transition: 0.2s; font-weight: 500; color: #444; }
+.category-item:hover { background-color: #f1f1f1; }
+.category-item.active { background-color: #e3f2fd; color: #007bff; border-left: 4px solid #007bff; }
+
+.subcategory-list { margin-left: 15px; border-left: 2px solid #eee; padding-left: 5px; display: none; }
+.category-item.active + .subcategory-list { display: block; }
+
+.sub-item { cursor: pointer; padding: 8px; font-size: 0.95rem; color: #666; border-radius: 4px; }
+.sub-item:hover { background-color: #f8f9fa; color: #000; }
+.sub-item.active { color: #d35400; font-weight: bold; background-color: #fff3e0; }
+
+.search-box { padding: 15px; border-bottom: 1px solid #eee; background: white; position: sticky; top: 0; z-index: 5; }
+.search-box input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; padding-left: 15px; }
+
+.q-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
+.q-item:hover { background-color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.q-title { font-weight: bold; margin-bottom: 5px; display: block; }
+.q-id { font-size: 0.8rem; color: #999; background: #eee; padding: 2px 6px; border-radius: 4px; }
+
+.content-card { max-width: 900px; margin: 0 auto; }
+.section-title { font-size: 1.2rem; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-top: 25px; margin-bottom: 15px; }
+.info-block { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #bdc3c7; }
+.info-block.symptoms { border-color: #e74c3c; background: #fdf2f2; }
+.info-block.causes { border-color: #f39c12; background: #fef9e7; }
+.info-block.steps { border-color: #27ae60; background: #f0f9f4; }
+.step-item { margin-bottom: 8px; line-height: 1.6; position: relative; padding-left: 20px; }
+.step-item::before { content: "•"; position: absolute; left: 0; color: #27ae60; font-weight: bold; }
+
+
+/* =========================================
+   3. 後台專用佈局 (Admin Layout)
+   ========================================= */
+
+/* 後台側邊欄 (使用 aside 標籤) */
+aside#admin-sidebar { 
+    width: 300px; /* 已縮窄 */
+    background: #fff; 
+    border-right: 1px solid #ddd; 
+    display: flex; 
+    flex-direction: column; 
+    flex-shrink: 0; 
+}
+
 .sidebar-header { padding: 15px; background: #f8f9fa; border-bottom: 1px solid #eee; }
-#sidebar-content, #tree-wrapper { flex: 1; overflow-y: auto; }
+#tree-wrapper { flex: 1; overflow-y: auto; }
 
-/* ✨✨✨ 特殊設定：後台側邊欄寬度 (縮窄回 300px) ✨✨✨ */
-#admin-sidebar { width: 300px; } 
+/* 後台主內容區 */
+main#admin-main { 
+    flex: 1; 
+    padding: 30px; 
+    overflow-y: auto; 
+    background: #fdfdfd; 
+}
 
-/* 後台專用 */
+/* 後台工具列 (Main Toolbar) */
+.main-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.group-left, .group-right { display: flex; gap: 10px; }
+
+/* 後台面板與頁籤 */
 .mode-tabs { display: flex; border-bottom: 1px solid #ddd; }
 .tab-btn { flex: 1; padding: 10px; border:none; background:#f1f1f1; cursor:pointer; }
 .tab-btn.active { background:#fff; color:#0066cc; border-bottom:2px solid #0066cc; font-weight:bold; }
@@ -31,40 +158,25 @@ aside { width: 320px; background: #fff; border-right: 1px solid #ddd; display: f
 .mode-panel.active { display: block; }
 .btn-group { display: flex; gap: 5px; margin-top: 5px; }
 
-/* ✨✨✨ 頂部工具列樣式 (主畫面) ✨✨✨ */
-.main-toolbar {
-    display: flex;
-    justify-content: space-between; /* 左右推開 */
-    align-items: center;
-    padding: 10px 20px;
-    background: #fff;
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 20px; /* 與編輯區保持距離 */
-    border-radius: 8px; /* 如果您希望工具列本身有點圓角 */
-    /* box-shadow: 0 2px 4px rgba(0,0,0,0.05); 可選：增加陰影 */
-}
-.group-left, .group-right {
-    display: flex;
-    gap: 10px; /* 按鈕間距 */
-}
+/* =========================================
+   4. 通用元件 (Common Components)
+   ========================================= */
 
 /* 按鈕樣式 */
+button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
 .btn-admin, .btn-back { display: block; text-align: center; text-decoration: none; color: #555; background: #eee; padding: 5px; border-radius: 4px; font-size: 14px; margin-bottom: 10px; }
 .btn-admin:hover, .btn-back:hover { background: #ddd; }
 
-/* 通用按鈕優化 */
-button { font-size: 14px; transition: background 0.2s; }
-.btn-blue { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-blue { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; }
 .btn-blue:hover { background: #0069d9; }
-.btn-green { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-green { background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; }
 .btn-green:hover { background: #218838; }
-.btn-gray { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-gray { background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px; }
 .btn-gray:hover { background: #5a6268; }
-/* 紅色按鈕 (刪除用) */
-.btn-red { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+.btn-red { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; }
 .btn-red:hover { background: #c82333; }
 
-/* 後台管理 - 回前台按鈕樣式 */
+/* 後台管理 - 回前台按鈕 */
 .btn-back-home {
     background-color: rgba(255, 255, 255, 0.2);
     color: white;
@@ -74,21 +186,13 @@ button { font-size: 14px; transition: background 0.2s; }
     font-size: 12px;
     transition: background 0.2s;
 }
-.btn-back-home:hover {
-    background-color: rgba(255, 255, 255, 0.4);
-}
-
-/* 主內容區 */
-main { flex: 1; padding: 30px; overflow-y: auto; background: #fdfdfd; }
-.article { max-width: 800px; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-.section h3 { background: #eef; color: #0056b3; padding: 5px 10px; border-radius: 4px; }
-.note { background: #fff3cd; padding: 15px; border-radius: 4px; color: #856404; margin-top: 20px; }
+.btn-back-home:hover { background-color: rgba(255, 255, 255, 0.4); }
 
 /* 關鍵字樣式 */
 .keywords-box { margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.9em; color: #666; }
 .keyword-tag { background: #f1f1f1; padding: 3px 8px; border-radius: 4px; margin-right: 5px; color: #555; border: 1px solid #ddd; }
 
-/* 圖片樣式 */
+/* 圖片容器與樣式 */
 .img-container { 
     display: inline-block;
     vertical-align: top;
@@ -103,7 +207,7 @@ main { flex: 1; padding: 30px; overflow-y: auto; background: #fdfdfd; }
 .img-size-medium img { max-width: 500px; max-height: 400px; }
 .img-size-large img { max-width: 100%; max-height: 800px; }
 
-/* Lightbox */
+/* Lightbox (圖片放大預覽) */
 #lightbox { position: fixed; z-index: 9999; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.9); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
 #lightbox.active { opacity: 1; visibility: visible; }
 #lightbox img { max-width: 90%; max-height: 90%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
@@ -111,9 +215,15 @@ main { flex: 1; padding: 30px; overflow-y: auto; background: #fdfdfd; }
 
 /* 輸入框 */
 input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
+textarea { resize: vertical; min-height: 80px; }
 select { width: 100%; padding: 8px; margin-bottom: 10px; }
 
-/* TOC 目錄樣式 */
+/* 後台目錄樹 (Tree) 樣式 */
+.tree-item { padding: 8px 10px; cursor: pointer; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+.tree-item:hover { background-color: #e9ecef; }
+.tree-item.active { background-color: #007bff; color: white; }
+
+/* TOC 目錄 (Sidebar Content in Admin - if used) */
 .toc-item { padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 500; user-select: none; transition: background 0.2s; }
 .toc-item:hover { background: #f0f0f0; }
 .toc-item.cat { font-weight: bold; background: #f8f9fa; border-bottom: 1px solid #eee; }
@@ -121,6 +231,3 @@ select { width: 100%; padding: 8px; margin-bottom: 10px; }
 .hidden { display: none; }
 .arrow { transition: transform 0.3s ease; font-size: 0.8em; color: #999; }
 .toc-item.expanded .arrow { transform: rotate(180deg); }
-.toc-link { display: block; padding: 8px 15px 8px 40px; text-decoration: none; color: #666; font-size: 0.9em; border-left: 3px solid transparent; }
-.toc-link:hover { color: #007bff; background: #eef; }
-.toc-link.active { color: #007bff; background: #eef; font-weight: bold; border-left: 3px solid #007bff; }
