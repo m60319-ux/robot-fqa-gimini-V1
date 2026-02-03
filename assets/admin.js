@@ -1,4 +1,4 @@
-// assets/admin.js - V3.5 CSV GitHub Import/Export
+// assets/admin.js - V3.7 Multiple Keywords Support
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -7,6 +7,7 @@ let activeNode = null;
 let activeParent = null;
 let localHandle = null;
 
+// 初始化
 document.addEventListener('DOMContentLoaded', () => {
     console.log("[Admin] DOM Loaded.");
     loadGhConfig();
@@ -273,7 +274,7 @@ function insertText(el, text) {
     el.value = el.value.substring(0, start) + text + el.value.substring(end);
 }
 
-// --- 編輯器邏輯 (UI) ---
+// --- 核心：解析與渲染 ---
 function parseAndRender(text) {
     console.log("[Admin] Parsing...");
     try {
@@ -372,9 +373,22 @@ function applyEdit() {
     const qDiv = document.getElementById('q-fields');
     if(qDiv && qDiv.style.display === 'block') {
         if(!activeNode.content) activeNode.content = {};
+        
+        // ✨ 修改點：支援多種分隔符號 (換行, 逗號, 加號, 頓號, 斜線)
         const split = (id) => {
             const el = document.getElementById(id);
-            return el ? el.value.split('\n').filter(x=>x.trim()) : [];
+            if (!el) return [];
+            
+            // 讀取值
+            let val = el.value;
+            
+            // 針對 keywords 欄位做特殊處理，將各種符號統一轉為換行
+            if (id === 'inp-keywords') {
+                val = val.replace(/[\u3000\+,\/\\、]/g, '\n');
+            }
+            
+            // 依換行符號分割，並過濾空值
+            return val.split('\n').map(x => x.trim()).filter(x => x !== "");
         };
         
         activeNode.content.symptoms = split('inp-symptoms');
@@ -415,7 +429,7 @@ function deleteNode() {
     }
 }
 
-// ✨✨✨ 新增功能：CSV 匯出與匯入 ✨✨✨
+// ✨✨✨ CSV 匯出與匯入 ✨✨✨
 
 // 1. 匯出 CSV (支援 Local 與 GitHub)
 async function exportToCSV() {
