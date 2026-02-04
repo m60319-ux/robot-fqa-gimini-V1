@@ -2,7 +2,6 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- ✨ 關鍵修改：強制網頁寬度為 1280px，讓手機自動縮放顯示完整電腦版面 -->
     <meta name="viewport" content="width=1280">
     <title>機器人故障排除助手</title>
     <link rel="stylesheet" href="assets/styles.css">
@@ -17,19 +16,22 @@
         <h1>機器人故障排除助手</h1>
     </div>
     
-    <!-- ✨✨✨ 修改：新的 Header 控制區 (地球圖示 + 管理按鈕) ✨✨✨ -->
+    <!-- Header 控制區 -->
     <div class="header-controls">
+        <!-- ✨✨✨ 修改：搜尋欄移到這裡 ✨✨✨ -->
+        <div class="header-search">
+            <input type="text" id="search-input" placeholder="🔍 搜尋代碼、關鍵字...">
+        </div>
+
         <!-- 語言下拉選單 -->
         <div class="lang-dropdown">
             <button onclick="toggleLangMenu(event)" class="lang-btn" title="切換語言">
-                <!-- 地球 SVG 圖示 -->
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="2" y1="12" x2="22" y2="12"></line>
                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                 </svg>
             </button>
-            <!-- 下拉清單 -->
             <div id="lang-menu" class="lang-menu">
                 <div onclick="setLang('zh')" class="lang-option" id="opt-zh">繁體中文</div>
                 <div onclick="setLang('cn')" class="lang-option" id="opt-cn">简体中文</div>
@@ -43,17 +45,13 @@
     </div>
 </header>
 
-<!-- 三欄式佈局容器 -->
 <div class="container">
     
     <!-- 第一欄：分類 -->
     <div class="sidebar" id="sidebar"></div>
 
-    <!-- 第二欄：問題列表 -->
+    <!-- 第二欄：問題列表 (移除原本內部的 search-box) -->
     <div class="question-list-panel" id="list-panel">
-        <div class="search-box">
-            <input type="text" id="search-input" placeholder="🔍 搜尋代碼、關鍵字...">
-        </div>
         <div id="question-list">
             <div style="padding:40px 20px; text-align:center; color:#999;">
                 請點選左側<br>📂 子分類
@@ -70,7 +68,6 @@
     </div>
 </div>
 
-<!-- 全螢幕圖片容器 -->
 <div class="fullscreen-overlay" id="fs-overlay" onclick="closeFullscreen()">
     <img id="fs-img" src="">
 </div>
