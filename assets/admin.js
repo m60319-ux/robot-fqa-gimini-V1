@@ -1,4 +1,4 @@
-// assets/admin.js - V5.1 Show IDs in Tree
+// assets/admin.js - V5.2 Move Question Feature
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     injectDownloadButton();
 
-    // Enter 鍵存檔
     const panel = document.getElementById('editor-panel');
     if (panel) {
         panel.addEventListener('keydown', (e) => {
@@ -50,33 +49,27 @@ function injectDownloadButton() {
     });
 }
 
-// -----------------------------------------------------------
-// 渲染邏輯核心
-// -----------------------------------------------------------
-
 function parseAndRender(text) {
     console.log("[Admin] Parsing...");
     try {
         const { varName, jsonText } = extractJsonPayload(text);
         if (varName) currentVarName = varName;
         currentData = JSON.parse(jsonText);
-        
-        // 重置選取狀態
         activeNode = null;
         currentSubNode = null;
-        
-        renderTree();      // 渲染第一欄 (Cat/Sub)
-        renderQuestionList(); // 渲染第二欄 (Empty or Questions)
-        
+        renderTree();
+        renderQuestionList();
         document.getElementById('editor-panel').style.display = 'none';
-
     } catch(e) {
         console.error(e);
         alert(`資料格式錯誤:\n${e.message}`);
     }
 }
 
-// 渲染左側分類樹 (只包含 Cat 和 Sub)
+// -----------------------------------------------------------
+// UI 渲染與編輯邏輯
+// -----------------------------------------------------------
+
 function renderTree() {
     const root = document.getElementById('tree-root');
     if(!root) return;
@@ -85,12 +78,9 @@ function renderTree() {
     if(!currentData.categories) currentData.categories = [];
 
     currentData.categories.forEach((cat, i) => {
-        // Render Category
         const catDiv = document.createElement('div');
         catDiv.className = 'tree-item';
         if(activeNode === cat) catDiv.classList.add('active');
-        
-        // ✨ 修改點：顯示 ID 以便識別
         catDiv.textContent = `📁 [${cat.id}] ${cat.title}`;
         
         catDiv.onclick = (e) => {
@@ -101,7 +91,6 @@ function renderTree() {
         };
         root.appendChild(catDiv);
 
-        // Render Subcategories
         if(cat.subcategories) {
             cat.subcategories.forEach((sub, j) => {
                 const subDiv = document.createElement('div');
@@ -109,8 +98,6 @@ function renderTree() {
                 if(activeNode === sub || currentSubNode === sub) {
                     subDiv.classList.add('active');
                 }
-                
-                // ✨ 修改點：顯示 ID 以便識別
                 subDiv.textContent = `📂 [${sub.id}] ${sub.title}`;
                 
                 subDiv.onclick = (e) => {
@@ -126,7 +113,6 @@ function renderTree() {
     });
 }
 
-// 渲染中間問題列表 (Q)
 function renderQuestionList(subNode = null) {
     const listRoot = document.getElementById('list-root');
     listRoot.innerHTML = '';
@@ -146,7 +132,6 @@ function renderQuestionList(subNode = null) {
         qItem.className = 'q-item';
         if(activeNode === q) qItem.classList.add('active');
         
-        // 問題列表也顯示一下 ID
         qItem.innerHTML = `
             <span class="q-title">${q.title || '(未命名)'}</span>
             <span class="q-id">${q.id}</span>
@@ -160,21 +145,11 @@ function renderQuestionList(subNode = null) {
     });
 }
 
-// 列表篩選功能
-function filterQuestionList(val) {
-    const items = document.querySelectorAll('#list-root .q-item');
-    val = val.toLowerCase();
-    items.forEach(item => {
-        const text = item.innerText.toLowerCase();
-        item.style.display = text.includes(val) ? 'block' : 'none';
-    });
-}
-
-// 載入編輯器 (Right Panel)
+// 載入編輯器
 function loadEditor(item, type, arr, idx) {
-    // 自動儲存舊的
     if (activeNode && document.getElementById('editor-panel').style.display !== 'none') {
-        applyEdit(true);
+        // 切換前先儲存，但要避免因 "移動" 邏輯觸發錯誤
+        applyEdit(true, false); // silent=true, checkMove=false
     }
 
     activeNode = item;
@@ -187,6 +162,31 @@ function loadEditor(item, type, arr, idx) {
     document.getElementById('inp-id').value = item.id || '';
     document.getElementById('inp-title').value = item.title || '';
     
+    // ✨✨✨ 處理移動分類選單 ✨✨✨
+    const moveDiv = document.getElementById('div-move-group');
+    const moveSelect = document.getElementById('inp-parent-sub');
+    
+    if (type === 'q') {
+        moveDiv.style.display = 'block';
+        // 1. 找出目前所屬的 Subcategory
+        const parentSub = findParentSubByArray(arr);
+        // 2. 建立選單 (所有 Subcategory)
+        let opts = '';
+        currentData.categories.forEach(cat => {
+            if(cat.subcategories && cat.subcategories.length > 0) {
+                opts += `<optgroup label="${cat.title} (${cat.id})">`;
+                cat.subcategories.forEach(sub => {
+                    const selected = parentSub && sub === parentSub ? 'selected' : '';
+                    opts += `<option value="${sub.id}" ${selected}>${sub.title} (${sub.id})</option>`;
+                });
+                opts += `</optgroup>`;
+            }
+        });
+        moveSelect.innerHTML = opts;
+    } else {
+        moveDiv.style.display = 'none';
+    }
+
     const qDiv = document.getElementById('q-fields');
     if(type === 'q') {
         qDiv.style.display = 'block';
@@ -204,14 +204,12 @@ function loadEditor(item, type, arr, idx) {
 }
 
 // 應用修改 (暫存)
-function applyEdit(silent = false) {
+function applyEdit(silent = false, checkMove = true) {
     if(!activeNode) return;
     
-    // Update basic info
     if(document.getElementById('inp-id')) activeNode.id = document.getElementById('inp-id').value;
     if(document.getElementById('inp-title')) activeNode.title = document.getElementById('inp-title').value;
     
-    // Update content if it's a question
     const qDiv = document.getElementById('q-fields');
     if(qDiv && qDiv.style.display === 'block') {
         if(!activeNode.content) activeNode.content = {};
@@ -230,14 +228,85 @@ function applyEdit(silent = false) {
         activeNode.content.keywords = split('inp-keywords');
         const notesEl = document.getElementById('inp-notes');
         activeNode.content.notes = notesEl ? notesEl.value : "";
+
+        // ✨✨✨ 檢查是否移動分類 ✨✨✨
+        if (checkMove) {
+            const newParentId = document.getElementById('inp-parent-sub').value;
+            // 找出目前的 parent (透過 activeParent.array 反查)
+            const currentSub = findParentSubByArray(activeParent.array);
+            
+            if (currentSub && newParentId && currentSub.id !== newParentId) {
+                // 執行移動
+                moveQuestionToSub(activeNode, currentSub, newParentId);
+                return; // moveQuestion 會負責更新 UI，這裡直接返回
+            }
+        }
     }
 
-    // Refresh Views
     renderTree(); 
     if (currentSubNode) renderQuestionList(currentSubNode); 
     
     if (!silent) alert("修改已暫存");
 }
+
+// 輔助：透過 questions array 找到所屬的 Subcategory 物件
+function findParentSubByArray(arr) {
+    if (!currentData) return null;
+    for (const cat of currentData.categories) {
+        if (cat.subcategories) {
+            for (const sub of cat.subcategories) {
+                if (sub.questions === arr) return sub;
+            }
+        }
+    }
+    return null;
+}
+
+// 輔助：移動問題
+function moveQuestionToSub(questionNode, oldSub, newSubId) {
+    // 1. 找到目標 Sub
+    let targetSub = null;
+    for (const cat of currentData.categories) {
+        if (cat.subcategories) {
+            const found = cat.subcategories.find(s => s.id === newSubId);
+            if (found) {
+                targetSub = found;
+                break;
+            }
+        }
+    }
+
+    if (!targetSub) {
+        alert("錯誤：找不到目標子分類！");
+        return;
+    }
+
+    if (confirm(`確定將問題 [${questionNode.id}] 移動到 [${targetSub.title}] 嗎？`)) {
+        // 2. 從舊陣列移除
+        const idx = oldSub.questions.indexOf(questionNode);
+        if (idx > -1) {
+            oldSub.questions.splice(idx, 1);
+        }
+
+        // 3. 加入新陣列
+        if (!targetSub.questions) targetSub.questions = [];
+        targetSub.questions.push(questionNode);
+
+        // 4. 更新 activeParent 引用，避免後續編輯出錯
+        activeParent.array = targetSub.questions;
+        activeParent.index = targetSub.questions.length - 1;
+
+        // 5. 更新 UI
+        // 自動切換到新的子分類列表
+        currentSubNode = targetSub;
+        renderTree(); // 更新樹狀圖高亮
+        renderQuestionList(targetSub); // 更新中間列表
+        
+        alert(`已移動至 ${targetSub.title}`);
+    }
+}
+
+// ... 下方為其他標準函式 (Add/Delete/Save/CSV) ...
 
 function addNode(type) {
     if(!currentData) return alert("請先載入檔案");
@@ -296,9 +365,14 @@ function deleteNode() {
     }
 }
 
-// -----------------------------------------------------------
-// 工具函式 (CSV / File / Github)
-// -----------------------------------------------------------
+function filterQuestionList(val) {
+    const items = document.querySelectorAll('#list-root .q-item');
+    val = val.toLowerCase();
+    items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        item.style.display = text.includes(val) ? 'block' : 'none';
+    });
+}
 
 function b64ToUtf8(b64) {
     try {
@@ -352,7 +426,6 @@ function saveGhConfig() {
     alert("設定已儲存");
 }
 
-// Local File
 async function connectLocalFolder() {
     if (!('showDirectoryPicker' in window)) return alert("瀏覽器不支援");
     try {
@@ -376,7 +449,6 @@ async function loadLocalFile(lang) {
     } catch(e) { alert("讀取失敗"); }
 }
 
-// Github File
 async function loadGithubFile(lang) {
     const token = document.getElementById('gh_token').value.trim();
     const user = document.getElementById('gh_user').value.trim();
@@ -393,7 +465,6 @@ async function loadGithubFile(lang) {
     } catch(e) { alert("GitHub 讀取失敗: "+e.message); }
 }
 
-// Save
 async function saveData() {
     if(!currentData) return alert("無資料");
     const content = `window.${currentVarName} = ${JSON.stringify(currentData, null, 4)};`;
@@ -405,7 +476,6 @@ async function saveData() {
         await w.close();
         alert("✅ 本機儲存成功");
     } else {
-        // Github Save
         const token = document.getElementById('gh_token').value;
         const user = document.getElementById('gh_user').value;
         const repo = document.getElementById('gh_repo').value;
@@ -429,7 +499,6 @@ async function saveData() {
     }
 }
 
-// Paste Image
 async function handleImagePaste(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
     let blob = null;
@@ -460,7 +529,6 @@ function insertText(el, text) {
     el.value = el.value.substring(0, start) + text + el.value.substring(end);
 }
 
-// CSV Export/Import
 function generateCSVContent() {
     if (!currentData || !currentData.categories) return null;
     const rows = [["category_id", "category_title", "sub_id", "sub_title", "question_id", "question_title", "symptoms", "root_causes", "solution_steps", "keywords", "notes"]];
