@@ -9,7 +9,6 @@
 </head>
 <body class="admin-mode">
 
-    <!-- 第一欄：設定與分類樹 -->
     <aside id="admin-sidebar">
         <div style="padding: 10px; background:#f8f9fa; border-bottom:1px solid #ddd;">
             <a href="index.html" class="btn-back">⬅ 返回首頁</a>
@@ -63,11 +62,9 @@
             </div>
         </div>
 
-        <!-- 分類樹 (只顯示 Cat/Sub) -->
         <div id="tree-wrapper"><div id="tree-root"></div></div>
     </aside>
 
-    <!-- ✨✨✨ 第二欄：問題列表 (新增) ✨✨✨ -->
     <div id="admin-list-panel" class="question-list-panel">
         <div class="search-box">
             <input type="text" id="list-filter" placeholder="🔍 篩選目前列表..." oninput="filterQuestionList(this.value)">
@@ -79,9 +76,7 @@
         </div>
     </div>
 
-    <!-- 第三欄：編輯區 -->
     <main id="admin-main">
-        <!-- 頂部工具列 -->
         <div class="main-toolbar">
             <div class="group-left">
                 <button onclick="addNode('cat')" class="btn-gray">➕ 分類</button>
@@ -97,6 +92,12 @@
         <div class="card" id="editor-panel" style="display:none;">
             <h2>編輯內容 <span id="node-type" style="font-size:0.5em; background:#eee; padding:2px;"></span></h2>
             
+            <!-- ✨✨✨ 新增：移動分類選單 ✨✨✨ -->
+            <div id="div-move-group" style="margin-bottom: 15px; display: none; background: #e3f2fd; padding: 10px; border-radius: 4px;">
+                <label style="color:#0056b3;">📂 所屬分類 (移動至...)</label>
+                <select id="inp-parent-sub" style="width:100%; padding:8px; border:1px solid #007bff;"></select>
+            </div>
+
             <label>ID (唯一識別碼)</label><input type="text" id="inp-id">
             <label>標題 / 名稱</label><input type="text" id="inp-title">
             
