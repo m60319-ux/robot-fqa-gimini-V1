@@ -1,4 +1,4 @@
-// assets/admin.js - V5.3 Visual List Editor (Images as Images)
+// assets/admin.js - V5.4 Multi-Image Preview & Image Gallery
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("[Admin] DOM Loaded.");
     loadGhConfig();
     
-    // 綁定全域貼上事件 (相容舊有 textarea)
     document.addEventListener('paste', handleGlobalPaste);
 
     injectDownloadButton();
@@ -22,12 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const panel = document.getElementById('editor-panel');
     if (panel) {
         panel.addEventListener('keydown', (e) => {
-            // 如果是在 list-editor 的 input 按 Enter，新增一行
             if (e.key === 'Enter' && e.target.classList.contains('row-input')) {
                 e.preventDefault();
                 addListRow(e.target.closest('.list-editor-container'));
             }
-            // 普通 input 按 Enter 儲存
             else if (e.key === 'Enter' && e.target.tagName === 'INPUT' && !e.target.classList.contains('row-input')) {
                 e.preventDefault(); 
                 applyEdit(false);
@@ -72,21 +69,18 @@ function parseAndRender(text) {
 // 可視化列表編輯器 (Visual List Editor)
 // -----------------------------------------------------------
 
-// 渲染列表 (將 Array 轉為 DOM)
 function renderListEditor(containerId, dataArray) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    container.innerHTML = ''; // 清空
+    container.innerHTML = ''; 
 
     if (!dataArray) dataArray = [];
     
-    // 渲染每一行
     dataArray.forEach(item => {
         const row = createListRow(item);
         container.appendChild(row);
     });
 
-    // 底部「新增一行」按鈕
     const addBtn = document.createElement('div');
     addBtn.className = 'btn-add-row';
     addBtn.innerText = '+ 新增一行';
@@ -94,35 +88,88 @@ function renderListEditor(containerId, dataArray) {
     container.appendChild(addBtn);
 }
 
-// 建立單行 DOM
+// 建立單行 DOM (支援多圖預覽 & 選擇圖片)
 function createListRow(content) {
     const row = document.createElement('div');
     row.className = 'list-row';
 
-    // 判斷內容是圖片還是文字
-    const isImg = content.trim().startsWith('{{img:') && content.trim().endsWith('}}');
+    // 判斷是否包含圖片標籤
+    const hasImg = content.includes('{{img:');
     
     const contentDiv = document.createElement('div');
     contentDiv.className = 'row-content';
+    // 讓內容區可以換行，以免多圖擠在一起
+    contentDiv.style.flexWrap = 'wrap'; 
+    contentDiv.style.gap = '5px';
 
-    if (isImg) {
-        // 圖片模式：顯示縮圖 + 隱藏欄位存原始碼
-        const src = content.match(/{{img:(.*?)}}/)[1];
-        const img = document.createElement('img');
-        img.src = src;
-        img.className = 'row-img-preview';
-        img.title = src;
+    // 隱藏的 input 用來存原始字串 (這是最重要的資料來源)
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden'; // 平常隱藏
+    hiddenInput.className = 'row-value'; // 加上 class 讓 collectListData 抓得到
+    hiddenInput.value = content;
+    
+    // 如果想要同時編輯文字又要看圖，可以考慮把 hiddenInput 改成 type="text" 但樣式做調整
+    // 這裡我們採用「混合模式」：
+    // 1. 如果純粹是文字 -> 顯示一般 Input
+    // 2. 如果包含圖片 -> 顯示圖片縮圖 + 一個「編輯原始碼」的按鈕 (或小 Input)
+
+    if (hasImg) {
+        // 解析所有圖片
+        const regex = /{{img:(.*?)}}/g;
+        let match;
+        let lastIndex = 0;
         
-        // 隱藏的 input 用來存 {{img:...}} 字串，方便讀取
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.className = 'row-value';
-        hiddenInput.value = content;
+        // 顯示非圖片的文字部分 (如果有)
+        // 這裡為了簡化，如果含有圖片，我們主要顯示圖片預覽
+        // 並提供一個小的 input 來編輯完整內容 (包含文字和 img tag)
+        
+        const editInput = document.createElement('input');
+        editInput.type = 'text';
+        editInput.className = 'row-input'; // 用來顯示和編輯原始碼
+        editInput.value = content;
+        editInput.style.marginBottom = '5px';
+        editInput.style.fontSize = '12px';
+        editInput.style.color = '#666';
+        editInput.style.width = '100%';
+        editInput.placeholder = '圖片原始碼...';
+        
+        // 當使用者修改這個 input 時，同步更新 hiddenInput (雖然這裡可以直接用 editInput 當值)
+        editInput.oninput = (e) => {
+            hiddenInput.value = e.target.value;
+            // TODO: 即時更新預覽圖 (稍微複雜，先不實作，存檔後刷新即可)
+        };
+        
+        // 加上 class 讓 collectListData 也能抓到它 (如果我們不使用 hiddenInput 的話)
+        // 但為了統一，我們還是讓 editInput 同步到 hiddenInput，或者直接把 editInput 當作 row-value
+        editInput.classList.add('row-value'); 
+        
+        contentDiv.appendChild(editInput);
 
-        contentDiv.appendChild(img);
-        contentDiv.appendChild(hiddenInput);
+        // 預覽區塊
+        const previewDiv = document.createElement('div');
+        previewDiv.style.display = 'flex';
+        previewDiv.style.gap = '5px';
+        previewDiv.style.flexWrap = 'wrap';
+
+        while ((match = regex.exec(content)) !== null) {
+            const src = match[1];
+            const imgContainer = document.createElement('div');
+            imgContainer.style.position = 'relative';
+            
+            const img = document.createElement('img');
+            img.src = src;
+            img.className = 'row-img-preview';
+            img.title = src;
+            img.style.cursor = 'pointer';
+            img.onclick = () => window.open(src, '_blank');
+
+            imgContainer.appendChild(img);
+            previewDiv.appendChild(imgContainer);
+        }
+        contentDiv.appendChild(previewDiv);
+
     } else {
-        // 文字模式：顯示輸入框
+        // 純文字模式
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'row-input row-value';
@@ -131,6 +178,19 @@ function createListRow(content) {
         contentDiv.appendChild(input);
     }
 
+    // 按鈕區
+    const btnGroup = document.createElement('div');
+    btnGroup.style.display = 'flex';
+    btnGroup.style.gap = '2px';
+
+    // 🖼️ 選擇圖片按鈕
+    const galleryBtn = document.createElement('button');
+    galleryBtn.className = 'btn-gray'; // 使用現有樣式
+    galleryBtn.innerHTML = '🖼️';
+    galleryBtn.title = '從圖庫選擇';
+    galleryBtn.style.padding = '2px 6px';
+    galleryBtn.onclick = () => openImageGallery(row); // 傳入當前 row
+
     // 刪除按鈕
     const delBtn = document.createElement('button');
     delBtn.className = 'btn-del-row';
@@ -138,35 +198,155 @@ function createListRow(content) {
     delBtn.title = '刪除此行';
     delBtn.onclick = () => row.remove();
 
+    btnGroup.appendChild(galleryBtn);
+    btnGroup.appendChild(delBtn);
+
     row.appendChild(contentDiv);
-    row.appendChild(delBtn);
+    row.appendChild(btnGroup);
 
     return row;
 }
 
-// 新增一行 (在按鈕之前插入)
 function addListRow(container, btnElement) {
     const newRow = createListRow('');
     if (!btnElement) btnElement = container.querySelector('.btn-add-row');
     container.insertBefore(newRow, btnElement);
-    
-    // 自動聚焦新輸入框
     const input = newRow.querySelector('input[type="text"]');
     if (input) input.focus();
 }
 
-// 收集資料 (將 DOM 轉回 Array)
 function collectListData(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return [];
     
     const values = [];
+    // 只抓取有 .row-value class 的 input
     container.querySelectorAll('.row-value').forEach(el => {
         if (el.value.trim() !== '') {
             values.push(el.value);
         }
     });
     return values;
+}
+
+// -----------------------------------------------------------
+// 🖼️ 圖片庫功能 (Image Gallery)
+// -----------------------------------------------------------
+
+async function openImageGallery(targetRow) {
+    // 1. 建立 Modal
+    let modal = document.getElementById('gallery-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'gallery-modal';
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+        `;
+        modal.innerHTML = `
+            <div style="background: white; padding: 20px; border-radius: 8px; width: 80%; max-height: 80%; overflow-y: auto; position: relative;">
+                <h3 style="margin-top:0;">📂 選擇圖片</h3>
+                <button onclick="document.getElementById('gallery-modal').style.display='none'" style="position: absolute; top: 10px; right: 10px; border:none; background:none; font-size:20px; cursor:pointer;">&times;</button>
+                <div id="gallery-content" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    Loading...
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+    const contentDiv = document.getElementById('gallery-content');
+    contentDiv.innerHTML = '正在讀取圖片清單...';
+
+    // 2. 取得圖片列表
+    let images = [];
+    try {
+        if (currentMode === 'local' && localHandle) {
+            // 本機模式：讀取 assets/images
+            try {
+                const imgDir = await localHandle.getDirectoryHandle('assets').then(d => d.getDirectoryHandle('images'));
+                for await (const entry of imgDir.values()) {
+                    if (entry.kind === 'file' && /\.(png|jpg|jpeg|gif|webp)$/i.test(entry.name)) {
+                        images.push({ name: entry.name, url: `assets/images/${entry.name}` }); // 本機無法直接預覽 FileHandle，只能猜路徑
+                        // 修正：如果是 FileSystemFileHandle，我們無法直接取得 URL，除非讀取它。
+                        // 這裡為了效能，我們假設路徑是 assets/images/filename，這在預覽時可能破圖，但在前端 app.js 是正確的。
+                        // 為了讓後台選單能預覽，我們得讀取它
+                        const file = await entry.getFile();
+                        const blobUrl = URL.createObjectURL(file);
+                        images[images.length-1].previewUrl = blobUrl;
+                    }
+                }
+            } catch (err) {
+                contentDiv.innerHTML = `<p style="color:red">無法讀取資料夾: ${err.message}</p>`;
+                return;
+            }
+        } else if (currentMode === 'github') {
+            // GitHub 模式：Call API
+            const token = document.getElementById('gh_token').value.trim();
+            const user = document.getElementById('gh_user').value.trim();
+            const repo = document.getElementById('gh_repo').value.trim();
+            if(!token) throw new Error("請先設定 GitHub Token");
+            
+            const apiUrl = `https://api.github.com/repos/${user}/${repo}/contents/assets/images`;
+            const res = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}` } });
+            if(!res.ok) throw new Error(`GitHub API Error: ${res.status}`);
+            const data = await res.json();
+            images = data.filter(f => f.type === 'file' && /\.(png|jpg|jpeg|gif|webp)$/i.test(f.name))
+                         .map(f => ({ name: f.name, url: f.path, previewUrl: f.download_url }));
+        } else {
+            contentDiv.innerHTML = `<p>⚠️ 請先連接本機資料夾或設定 GitHub，才能讀取圖庫。</p>`;
+            return;
+        }
+    } catch (e) {
+        contentDiv.innerHTML = `<p style="color:red">讀取失敗: ${e.message}</p>`;
+        return;
+    }
+
+    // 3. 渲染圖片
+    contentDiv.innerHTML = '';
+    if(images.length === 0) {
+        contentDiv.innerHTML = '<p>沒有找到圖片。</p>';
+        return;
+    }
+
+    images.forEach(img => {
+        const item = document.createElement('div');
+        item.style.cssText = 'width: 120px; cursor: pointer; border: 1px solid #ddd; padding: 5px; border-radius: 4px; text-align: center;';
+        item.innerHTML = `
+            <div style="height: 80px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                <img src="${img.previewUrl || img.url}" style="max-width: 100%; max-height: 100%;">
+            </div>
+            <div style="font-size: 12px; margin-top: 5px; word-break: break-all;">${img.name}</div>
+        `;
+        item.onclick = () => {
+            // 選中圖片：插入到對應的 row
+            insertImageToRow(targetRow, img.url); // 使用相對路徑 assets/images/...
+            document.getElementById('gallery-modal').style.display = 'none';
+        };
+        contentDiv.appendChild(item);
+    });
+}
+
+function insertImageToRow(row, imgPath) {
+    // 檢查 row 裡面是否已經有 input
+    // 如果是空的文字框，直接替換
+    // 如果已經有內容，則附加在後面 (或插入新圖片標籤)
+    
+    const imgTag = `{{img:${imgPath}}}`;
+    const input = row.querySelector('.row-input');
+    
+    if (input) {
+        if (input.value.trim() === '') {
+            input.value = imgTag;
+        } else {
+            input.value += ' ' + imgTag;
+        }
+        // 觸發重新渲染這一行 (為了顯示預覽圖)
+        // 簡單作法：取得 parent，用 createListRow 重建這一行並取代
+        const newRow = createListRow(input.value);
+        row.parentNode.replaceChild(newRow, row);
+    }
 }
 
 // -----------------------------------------------------------
@@ -188,7 +368,6 @@ function loadEditor(item, type, arr, idx) {
     document.getElementById('inp-id').value = item.id || '';
     document.getElementById('inp-title').value = item.title || '';
     
-    // 移動分類選單
     const moveDiv = document.getElementById('div-move-group');
     const moveSelect = document.getElementById('inp-parent-sub');
     if (type === 'q') {
@@ -210,18 +389,15 @@ function loadEditor(item, type, arr, idx) {
         moveDiv.style.display = 'none';
     }
 
-    // 載入內容
     const qDiv = document.getElementById('q-fields');
     if(type === 'q') {
         qDiv.style.display = 'block';
         const c = item.content || {};
         
-        // ✨ 使用新的 Visual List Editor 渲染 ✨
         renderListEditor('container-symptoms', c.symptoms);
         renderListEditor('container-causes', c.rootCauses);
         renderListEditor('container-steps', c.solutionSteps);
         
-        // 關鍵字與備註維持 Textarea (關鍵字用 \n 分隔)
         const join = (a) => Array.isArray(a) ? a.join('\n') : (a || "");
         document.getElementById('inp-keywords').value = join(c.keywords);
         document.getElementById('inp-notes').value = c.notes || "";
@@ -240,12 +416,10 @@ function applyEdit(silent = false, checkMove = true) {
     if(qDiv && qDiv.style.display === 'block') {
         if(!activeNode.content) activeNode.content = {};
         
-        // ✨ 從 Visual List Editor 收集資料 ✨
         activeNode.content.symptoms = collectListData('container-symptoms');
         activeNode.content.rootCauses = collectListData('container-causes');
         activeNode.content.solutionSteps = collectListData('container-steps');
         
-        // 處理關鍵字
         const split = (id) => {
             const el = document.getElementById(id);
             if (!el) return [];
@@ -258,7 +432,6 @@ function applyEdit(silent = false, checkMove = true) {
         const notesEl = document.getElementById('inp-notes');
         activeNode.content.notes = notesEl ? notesEl.value : "";
 
-        // 移動分類檢查
         if (checkMove) {
             const newParentId = document.getElementById('inp-parent-sub').value;
             const currentSub = findParentSubByArray(activeParent.array);
@@ -275,16 +448,12 @@ function applyEdit(silent = false, checkMove = true) {
     if (!silent) alert("修改已暫存");
 }
 
-// -----------------------------------------------------------
-// 圖片貼上處理 (升級版)
-// -----------------------------------------------------------
 async function handleGlobalPaste(e) {
     const target = e.target;
-    // 檢查是否貼在 List Editor 的輸入框內
     const isRowInput = target.classList.contains('row-input');
     const isTextArea = target.tagName === 'TEXTAREA' && target.classList.contains('paste-area');
 
-    if (!isRowInput && !isTextArea) return; // 如果不是在編輯區，不攔截
+    if (!isRowInput && !isTextArea) return; 
 
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
     let blob = null;
@@ -292,9 +461,9 @@ async function handleGlobalPaste(e) {
         if (items[i].type.indexOf("image")===0) { blob = items[i].getAsFile(); break; }
     }
     
-    if(!blob) return; // 沒有圖片，不處理 (讓預設貼上文字發生)
+    if(!blob) return; 
     
-    e.preventDefault(); // 攔截貼上
+    e.preventDefault(); 
     
     if(!confirm("偵測到圖片，確定上傳？")) return;
     
@@ -302,7 +471,6 @@ async function handleGlobalPaste(e) {
     const path = `assets/images/${filename}`;
     const imgTag = `{{img:${path}}}`;
 
-    // 儲存檔案
     try {
         if(currentMode==='local' && localHandle) {
             const dir = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('images'));
@@ -311,7 +479,6 @@ async function handleGlobalPaste(e) {
             await w.write(blob);
             await w.close();
         } else {
-            // Github 上傳邏輯 (需要實作 Base64 上傳)
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
@@ -324,24 +491,13 @@ async function handleGlobalPaste(e) {
         return;
     }
 
-    // ✨ 插入邏輯 ✨
     if (isRowInput) {
-        // 如果是在列表中貼上：
-        // 1. 找到當前行
         const currentRow = target.closest('.list-row');
         const container = currentRow.parentElement;
-        
-        // 2. 建立一個新的圖片行
         const imgRow = createListRow(imgTag);
-        
-        // 3. 插入在當前行之後
         container.insertBefore(imgRow, currentRow.nextSibling);
-        
-        // 4. 如果當前輸入框是空的，可以考慮刪除它? 不，保留比較好。
-        
         alert("圖片已插入！");
     } else {
-        // 如果是在 Textarea (如 Notes)，維持原樣插入文字
         insertText(target, imgTag);
     }
 }
@@ -443,7 +599,7 @@ function moveQuestionToSub(questionNode, oldSub, newSubId) {
     }
 }
 
-function addNode(type) { /* ... (維持原樣) ... */ 
+function addNode(type) {
     if(!currentData) return alert("請先載入檔案");
     const ts = Date.now().toString().slice(-4);
     if(type === 'cat') {
@@ -467,7 +623,7 @@ function addNode(type) { /* ... (維持原樣) ... */
         } else alert("請先點選左側「子分類」以新增問題");
     }
 }
-function deleteNode() { /* ... (維持原樣) ... */ 
+function deleteNode() {
     if(!activeNode || !activeParent) return alert("請先選擇項目");
     if(confirm("確定刪除此項目？")) {
         activeParent.array.splice(activeParent.index, 1);
@@ -478,7 +634,7 @@ function deleteNode() { /* ... (維持原樣) ... */
         if (currentSubNode) renderQuestionList(currentSubNode);
     }
 }
-function filterQuestionList(val) { /* ... (維持原樣) ... */ 
+function filterQuestionList(val) {
     const items = document.querySelectorAll('#list-root .q-item');
     val = val.toLowerCase();
     items.forEach(item => {
