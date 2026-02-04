@@ -11,19 +11,25 @@
 <body>
 
 <header>
-    <div style="display:flex; align-items:center;">
-        <span style="font-size:24px; margin-right:10px;">🤖</span>
+    <div class="logo-section">
+        <!-- ✨✨✨ 修改：Logo 圖片 ✨✨✨ -->
+        <!-- 1. 請將您的圖片放在 assets/images/ 資料夾下 -->
+        <!-- 2. 若載入失敗 (onerror)，會自動顯示備用的 Emoji -->
+        <img src="assets/images/logo.png" alt="Logo" class="header-logo" 
+             onerror="this.style.display='none'; document.getElementById('fallback-icon').style.display='block';">
+        
+        <!-- 備用圖示 (預設隱藏) -->
+        <span id="fallback-icon" style="display:none; font-size:24px; margin-right:10px;">🤖</span>
+        
         <h1>機器人故障排除助手</h1>
     </div>
     
     <!-- Header 控制區 -->
     <div class="header-controls">
-        <!-- ✨✨✨ 修改：搜尋欄移到這裡 ✨✨✨ -->
         <div class="header-search">
             <input type="text" id="search-input" placeholder="🔍 搜尋代碼、關鍵字...">
         </div>
 
-        <!-- 語言下拉選單 -->
         <div class="lang-dropdown">
             <button onclick="toggleLangMenu(event)" class="lang-btn" title="切換語言">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -40,17 +46,14 @@
             </div>
         </div>
 
-        <!-- 管理後台按鈕 -->
         <button onclick="checkAdminPass()" class="btn-admin-entry" title="進入管理後台">⚙️ 管理</button>
     </div>
 </header>
 
 <div class="container">
     
-    <!-- 第一欄：分類 -->
     <div class="sidebar" id="sidebar"></div>
 
-    <!-- 第二欄：問題列表 (移除原本內部的 search-box) -->
     <div class="question-list-panel" id="list-panel">
         <div id="question-list">
             <div style="padding:40px 20px; text-align:center; color:#999;">
@@ -59,7 +62,6 @@
         </div>
     </div>
 
-    <!-- 第三欄：內容 -->
     <div class="content-panel" id="content-display">
         <div style="text-align:center; margin-top:100px; color:#aaa;">
             <h2>👋 歡迎使用</h2>
