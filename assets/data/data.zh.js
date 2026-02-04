@@ -11,29 +11,7 @@ window.FAQ_DATA_ZH = {
                 {
                     "id": "SUB-01",
                     "title": "馬達異常",
-                    "questions": [
-                        {
-                            "id": "Q-001",
-                            "title": "無法過電",
-                            "content": {
-                                "symptoms": [
-                                    "燈號未亮123"
-                                ],
-                                "rootCauses": [
-                                    "保險絲斷",
-                                    "{{img:assets/images/img_1769763508765.png}}{{img:assets/images/img_1769763508765.png}}"
-                                ],
-                                "solutionSteps": [
-                                    "更換保險絲",
-                                    "{{img:assets/images/img_1769763514401.png}}"
-                                ],
-                                "notes": "",
-                                "keywords": [
-                                    "AL001"
-                                ]
-                            }
-                        }
-                    ]
+                    "questions": []
                 },
                 {
                     "id": "SUB-02",
@@ -98,6 +76,27 @@ window.FAQ_DATA_ZH = {
                                     "AL044",
                                     "驅動器",
                                     "ABC"
+                                ]
+                            }
+                        },
+                        {
+                            "id": "Q-001",
+                            "title": "無法過電",
+                            "content": {
+                                "symptoms": [
+                                    "燈號未亮123"
+                                ],
+                                "rootCauses": [
+                                    "保險絲斷",
+                                    "{{img:assets/images/img_1769763508765.png}}{{img:assets/images/img_1769763508765.png}}"
+                                ],
+                                "solutionSteps": [
+                                    "更換保險絲",
+                                    "{{img:assets/images/img_1769763514401.png}}"
+                                ],
+                                "notes": "",
+                                "keywords": [
+                                    "AL001"
                                 ]
                             }
                         }
