@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>機器人故障排除助手</title>
     <link rel="stylesheet" href="assets/styles.css">
-    <!-- 引入 Fuse.js 用於模糊搜尋 -->
+    <link rel="icon" href="data:,">
     <script src="assets/libs/fuse.min.js"></script>
 </head>
 <body>
@@ -21,34 +21,36 @@
         <button onclick="setLang('en')" id="btn-en">EN</button>
         <button onclick="setLang('th')" id="btn-th">ไทย</button>
         
-        <!-- ✨✨✨ 新增：後台管理按鈕 ✨✨✨ -->
+        <!-- 管理後台入口 -->
         <button onclick="checkAdminPass()" style="margin-left: 15px; border-color: #f39c12; color: #f39c12;" title="進入管理後台">⚙️ 管理</button>
     </div>
 </header>
 
+<!-- 三欄式主容器 -->
 <div class="container">
-    <!-- 側邊欄：分類樹 -->
+    
+    <!-- 第一欄：分類導覽 -->
     <div class="sidebar" id="sidebar">
-        <!-- JS 動態生成 -->
+        <!-- JS 動態生成分類樹 -->
     </div>
 
-    <!-- 中間欄：問題列表與搜尋 -->
-    <div class="question-list-panel">
+    <!-- 第二欄：問題列表 -->
+    <div class="question-list-panel" id="list-panel">
         <div class="search-box">
             <input type="text" id="search-input" placeholder="🔍 搜尋代碼、關鍵字...">
         </div>
         <div id="question-list">
-            <div style="padding:20px; text-align:center; color:#999;">
-                請選擇左側分類<br>或輸入關鍵字搜尋
+            <div style="padding:40px 20px; text-align:center; color:#999;">
+                請點選左側<br>📂 子分類
             </div>
         </div>
     </div>
 
-    <!-- 右側欄：詳細內容 -->
+    <!-- 第三欄：內容顯示 -->
     <div class="content-panel" id="content-display">
         <div style="text-align:center; margin-top:100px; color:#aaa;">
-            <h2>👋 歡迎使用知識庫</h2>
-            <p>請點選問題以查看詳細排查步驟</p>
+            <h2>👋 歡迎使用</h2>
+            <p>請選擇問題以查看詳細排查步驟</p>
         </div>
     </div>
 </div>
@@ -58,22 +60,15 @@
     <img id="fs-img" src="">
 </div>
 
-<!-- 載入資料檔 (預設繁中) -->
-<script src="assets/data/data.zh.js"></script>
-<script src="assets/data/data.cn.js"></script>
-<script src="assets/data/data.en.js"></script>
-<script src="assets/data/data.th.js"></script>
-
-<!-- 主程式 -->
+<!-- 載入資料與程式 -->
 <script src="assets/app.js"></script>
 
-<!-- ✨✨✨ 新增：密碼驗證腳本 ✨✨✨ -->
 <script>
     function checkAdminPass() {
         const password = prompt("請輸入管理員密碼：");
         if (password === "DeltaFAE") {
             window.location.href = "admin.html";
-        } else if (password !== null) { // 如果使用者不是按取消
+        } else if (password !== null) {
             alert("❌ 密碼錯誤！");
         }
     }
