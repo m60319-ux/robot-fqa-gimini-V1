@@ -1,4 +1,4 @@
-// assets/app.js - V2.6 Enhanced Multi-Keyword Separators
+// assets/app.js - V2.7 Localized UI Labels
 let currentLang = 'zh';
 let faqData = {}; 
 let fuse; 
@@ -9,8 +9,36 @@ const DATA_VAR_MAP = {
     'zh': 'FAQ_DATA_ZH', 'cn': 'FAQ_DATA_CN', 'en': 'FAQ_DATA_EN', 'th': 'FAQ_DATA_TH'
 };
 
-// ✨ 定義搜尋欄位 (供 Fuse 與邏輯查詢使用)
+// ✨ 定義搜尋欄位
 const SEARCH_KEYS = ['id', 'title', 'content.keywords', 'content.symptoms'];
+
+// ✨✨✨ 新增：UI 標籤多語系對照表 ✨✨✨
+const UI_LABELS = {
+    'zh': {
+        symptoms: '🛑 異常徵兆 (Symptoms)',
+        rootCauses: '🔍 可能原因 (Root Causes)',
+        solutions: '🛠️ 排查與解決 (Solution)',
+        note: '備註'
+    },
+    'cn': {
+        symptoms: '🛑 异常征兆 (Symptoms)',
+        rootCauses: '🔍 可能原因 (Root Causes)',
+        solutions: '🛠️ 排查与解决 (Solution)',
+        note: '备注'
+    },
+    'en': {
+        symptoms: '🛑 Symptoms',
+        rootCauses: '🔍 Root Causes',
+        solutions: '🛠️ Solution',
+        note: 'Note'
+    },
+    'th': {
+        symptoms: '🛑 อาการ (Symptoms)',
+        rootCauses: '🔍 สาเหตุ (Root Causes)',
+        solutions: '🛠️ วิธีแก้ไข (Solution)',
+        note: 'หมายเหตุ'
+    }
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -229,10 +257,13 @@ function renderContent(q) {
     const display = document.getElementById('content-display');
     const c = q.content || {};
 
+    // ✨ 取得當前語言的標籤 (預設英文)
+    const labels = UI_LABELS[currentLang] || UI_LABELS['en'];
+
     const processText = (text) => {
         if (!text) return "";
         return text.replace(/{{img:(.*?)}}/g, (match, path) => {
-            return `<div class="img-container img-size-small"><img src="${path}" onclick="openFullscreen(this.src)"></div>`;
+            return `<div class="img-container img-size-medium"><img src="${path}" onclick="openFullscreen(this.src)"></div>`;
         });
     };
 
@@ -243,28 +274,29 @@ function renderContent(q) {
 
     const keywordsHtml = (c.keywords || []).map(k => `<span class="keyword-tag">#${k}</span>`).join('');
 
+    // ✨ 渲染時使用變數 labels.symptoms 等
     display.innerHTML = `
         <div class="content-card">
             <h1 style="color:#2c3e50; margin-bottom:10px;">${q.title}</h1>
             <div style="color:#888; font-size:0.9em; margin-bottom:15px;">ID: ${q.id}</div>
             <div style="margin-bottom:25px;">${keywordsHtml}</div>
 
-            <h3 class="section-title" style="color:#e74c3c;">🛑 異常徵兆 (Symptoms)</h3>
+            <h3 class="section-title" style="color:#e74c3c;">${labels.symptoms}</h3>
             <div class="info-block symptoms">
                 ${renderList(c.symptoms)}
             </div>
 
-            <h3 class="section-title" style="color:#f39c12;">🔍 可能原因 (Root Causes)</h3>
+            <h3 class="section-title" style="color:#f39c12;">${labels.rootCauses}</h3>
             <div class="info-block causes">
                 ${renderList(c.rootCauses)}
             </div>
 
-            <h3 class="section-title" style="color:#27ae60;">🛠️ 排查與解決 (Solution)</h3>
+            <h3 class="section-title" style="color:#27ae60;">${labels.solutions}</h3>
             <div class="info-block steps">
                 ${renderList(c.solutionSteps)}
             </div>
 
-            ${c.notes ? `<div style="margin-top:30px; padding:15px; background:#fff3cd; border-radius:4px; color:#856404;">📝 <b>備註:</b><br>${processText(c.notes)}</div>` : ''}
+            ${c.notes ? `<div style="margin-top:30px; padding:15px; background:#fff3cd; border-radius:4px; color:#856404;">📝 <b>${labels.note}:</b><br>${processText(c.notes)}</div>` : ''}
         </div>
     `;
 }
@@ -293,10 +325,8 @@ function initSearchIndex() {
         });
     }
 
-    // ✨✨✨ 搜尋精準度與欄位設定 ✨✨✨
     const options = {
         keys: SEARCH_KEYS,
-        // threshold: 0.0 (最嚴格) ~ 1.0 (最寬鬆)
         threshold: 0.3, 
         useExtendedSearch: true,
         ignoreLocation: true,
@@ -317,14 +347,10 @@ function handleSearch(keyword) {
         return;
     }
 
-    // ✨✨✨ 多關鍵字邏輯處理 (AND Logic) ✨✨✨
-    // 支援分隔符號：空白, 逗號(,), 頓號(、), 斜線(/), 反斜線(\)
     const terms = keyword.replace(/　/g, ' ')
-                         .split(/[\s,\u3001/\\+]+/)
+                         .split(/[\s,\u3001/\\]+/)
                          .filter(t => t.trim().length > 0);
     
-    // 建構邏輯查詢: 每個關鍵字都必須出現在任一指定欄位中
-    // { $and: [ { $or: [ {key: term1}, ... ] }, { $or: [ {key: term2}, ... ] } ] }
     const logicQuery = {
         $and: terms.map(term => ({
             $or: SEARCH_KEYS.map(key => ({ [key]: term }))
