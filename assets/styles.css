@@ -37,6 +37,20 @@ header {
     z-index: 10;
     height: 60px; 
 }
+
+/* ✨✨✨ 新增：Logo 區域與圖片樣式 ✨✨✨ */
+.logo-section {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo {
+    height: 40px;       /* 固定高度，配合 Header 的 60px */
+    width: auto;        /* 寬度自動，保持比例 */
+    margin-right: 15px; /* 與標題的距離 */
+    object-fit: contain;
+}
+
 header h1 { margin: 0; font-size: 1.5rem; white-space: nowrap; }
 
 /* Header 控制區樣式 */
@@ -251,6 +265,93 @@ button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
 .keywords-box { margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.9em; color: #666; }
 .keyword-tag { background: #f1f1f1; padding: 3px 8px; border-radius: 4px; margin-right: 5px; color: #555; border: 1px solid #ddd; }
 
+/* 6. 可視化列表編輯器 (Visual List Editor) */
+.list-editor-container {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background: #fff;
+    min-height: 50px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.list-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 10px;
+    background: #f9f9f9;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #eee;
+}
+
+.list-row:hover {
+    background: #f0f8ff;
+    border-color: #cce5ff;
+}
+
+.row-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.row-input {
+    width: 100%;
+    border: 1px solid #ccc;
+    padding: 6px;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+.row-img-preview {
+    max-width: 150px;
+    max-height: 100px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    display: block;
+}
+
+.btn-del-row {
+    background: #ffebee;
+    color: #c62828;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.btn-del-row:hover {
+    background: #ef9a9a;
+    color: white;
+}
+
+.btn-add-row {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    background: #f1f3f5;
+    border: 2px dashed #dee2e6;
+    color: #666;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: 0.2s;
+}
+.btn-add-row:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    color: #333;
+}
+
+/* 圖片樣式 */
 .img-container { display: inline-block; vertical-align: top; margin: 10px 5px; transition: all 0.3s ease; }
 .img-container img { border: 1px solid #ddd; border-radius: 4px; cursor: zoom-in; display: block; transition: max-width 0.3s ease, max-height 0.3s ease; }
 .img-container img:hover { opacity: 0.9; }
@@ -258,8 +359,6 @@ button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
 .img-size-medium img { max-width: 500px; max-height: 400px; }
 .img-size-large img { max-width: 100%; max-height: 800px; }
 
-/* ✨✨✨ 修復圖片放大後畫面卡住的問題 ✨✨✨ */
-/* 統一使用 #fs-overlay (配合 HTML ID) 與 .show (配合 JS Class) */
 #fs-overlay {
     position: fixed;
     z-index: 9999;
@@ -290,6 +389,6 @@ button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
     cursor: zoom-out; /* 提示可點擊關閉 */
 }
 
-input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
+input:not(#search-input), textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
 textarea { resize: vertical; min-height: 80px; }
 select { width: 100%; padding: 8px; margin-bottom: 10px; }
