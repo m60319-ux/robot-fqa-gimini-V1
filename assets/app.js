@@ -320,7 +320,7 @@ function handleSearch(keyword) {
     // ✨✨✨ 多關鍵字邏輯處理 (AND Logic) ✨✨✨
     // 支援分隔符號：空白, 逗號(,), 頓號(、), 斜線(/), 反斜線(\)
     const terms = keyword.replace(/　/g, ' ')
-                         .split(/[\s,\u3001/\\]+/)
+                         .split(/[\s,\u3001/\\+]+/)
                          .filter(t => t.trim().length > 0);
     
     // 建構邏輯查詢: 每個關鍵字都必須出現在任一指定欄位中
