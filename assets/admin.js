@@ -1,4 +1,4 @@
-// assets/admin.js - V5.0 Three-Column Layout (Like Frontend)
+// assets/admin.js - V5.1 Show IDs in Tree
 let currentMode = 'local';
 let currentData = null;
 let currentVarName = "FAQ_DATA_ZH";
@@ -51,7 +51,7 @@ function injectDownloadButton() {
 }
 
 // -----------------------------------------------------------
-// 渲染邏輯核心 (V5 改版)
+// 渲染邏輯核心
 // -----------------------------------------------------------
 
 function parseAndRender(text) {
@@ -89,13 +89,15 @@ function renderTree() {
         const catDiv = document.createElement('div');
         catDiv.className = 'tree-item';
         if(activeNode === cat) catDiv.classList.add('active');
-        catDiv.textContent = `📁 ${cat.title||cat.id}`;
+        
+        // ✨ 修改點：顯示 ID 以便識別
+        catDiv.textContent = `📁 [${cat.id}] ${cat.title}`;
+        
         catDiv.onclick = (e) => {
-            // 點擊分類：只編輯分類本身，中間列表清空
             loadEditor(cat, 'cat', currentData.categories, i);
             currentSubNode = null; 
-            renderQuestionList(); // 清空列表
-            renderTree(); // 更新高亮
+            renderQuestionList(); 
+            renderTree(); 
         };
         root.appendChild(catDiv);
 
@@ -104,18 +106,19 @@ function renderTree() {
             cat.subcategories.forEach((sub, j) => {
                 const subDiv = document.createElement('div');
                 subDiv.className = 'tree-item sub-node';
-                // 如果目前選取的是這個 Sub，或者是這個 Sub 底下的 Q
                 if(activeNode === sub || currentSubNode === sub) {
                     subDiv.classList.add('active');
                 }
-                subDiv.textContent = `📂 ${sub.title||sub.id}`;
+                
+                // ✨ 修改點：顯示 ID 以便識別
+                subDiv.textContent = `📂 [${sub.id}] ${sub.title}`;
+                
                 subDiv.onclick = (e) => {
                     e.stopPropagation();
-                    // 點擊子類：編輯子類，並顯示其問題列表
                     currentSubNode = sub;
                     loadEditor(sub, 'sub', cat.subcategories, j);
                     renderQuestionList(sub);
-                    renderTree(); // 更新高亮
+                    renderTree(); 
                 };
                 root.appendChild(subDiv);
             });
@@ -134,7 +137,7 @@ function renderQuestionList(subNode = null) {
     }
 
     if (!subNode.questions || subNode.questions.length === 0) {
-        listRoot.innerHTML = '<div style="padding:20px; text-align:center; color:#ccc;">(無問題)</div>';
+        listRoot.innerHTML = '<div style="padding:20px; text-align:center;">(無問題)</div>';
         return;
     }
 
@@ -143,15 +146,15 @@ function renderQuestionList(subNode = null) {
         qItem.className = 'q-item';
         if(activeNode === q) qItem.classList.add('active');
         
+        // 問題列表也顯示一下 ID
         qItem.innerHTML = `
             <span class="q-title">${q.title || '(未命名)'}</span>
             <span class="q-id">${q.id}</span>
         `;
         
         qItem.onclick = () => {
-            // 點擊問題：編輯問題
             loadEditor(q, 'q', subNode.questions, k);
-            renderQuestionList(subNode); // 更新列表高亮
+            renderQuestionList(subNode); 
         };
         listRoot.appendChild(qItem);
     });
@@ -231,7 +234,7 @@ function applyEdit(silent = false) {
 
     // Refresh Views
     renderTree(); 
-    if (currentSubNode) renderQuestionList(currentSubNode); // Refresh middle column if active
+    if (currentSubNode) renderQuestionList(currentSubNode); 
     
     if (!silent) alert("修改已暫存");
 }
@@ -245,14 +248,9 @@ function addNode(type) {
         renderTree();
     } 
     else if (type === 'sub') {
-        // 新增子類：必須先選中一個分類 (或子類，我們會找到它的父分類)
-        // 這裡簡化：必須 activeNode 是 Cat，或者是 Sub (從 activeParent 找)
-        // 為了簡單，如果 activeNode 是 Cat，就加進去。
-        // 如果 activeNode 是 Sub，就加到同層級。
-        
         let targetCat = null;
         if (activeNode && activeNode.subcategories) {
-            targetCat = activeNode; // It's a category
+            targetCat = activeNode; 
         } else if (activeNode && currentData.categories.some(c => c.subcategories && c.subcategories.includes(activeNode))) {
              targetCat = currentData.categories.find(c => c.subcategories.includes(activeNode));
         }
@@ -265,14 +263,12 @@ function addNode(type) {
         }
     } 
     else if (type === 'q') {
-        // 新增問題：必須確認目前有選中 Sub
         if (currentSubNode) {
             currentSubNode.questions.push({ 
                 id:`Q-${ts}`, title:"New Question", 
                 content:{symptoms:[],rootCauses:[],solutionSteps:[],keywords:[],notes:""} 
             });
             renderQuestionList(currentSubNode);
-            // Auto select new question
             const newQ = currentSubNode.questions[currentSubNode.questions.length - 1];
             loadEditor(newQ, 'q', currentSubNode.questions, currentSubNode.questions.length - 1);
         } else {
@@ -285,10 +281,8 @@ function deleteNode() {
     if(!activeNode || !activeParent) return alert("請先選擇項目");
     
     if(confirm("確定刪除此項目？")) {
-        // Remove from array
         activeParent.array.splice(activeParent.index, 1);
         
-        // If we deleted the current sub, clear list
         if (activeNode === currentSubNode) {
             currentSubNode = null;
             renderQuestionList();
@@ -303,7 +297,7 @@ function deleteNode() {
 }
 
 // -----------------------------------------------------------
-// 工具函式 (CSV / File / Github) - 保持原樣但微調
+// 工具函式 (CSV / File / Github)
 // -----------------------------------------------------------
 
 function b64ToUtf8(b64) {
@@ -417,12 +411,10 @@ async function saveData() {
         const repo = document.getElementById('gh_repo').value;
         const url = `https://api.github.com/repos/${user}/${repo}/contents/assets/data/data.${currentLang}.js`;
         
-        // 1. Get SHA
         const getRes = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
         let sha = null;
         if(getRes.ok) sha = (await getRes.json()).sha;
 
-        // 2. Put
         const res = await fetch(url, {
             method: 'PUT',
             headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
@@ -450,8 +442,6 @@ async function handleImagePaste(e) {
     if(!confirm("上傳圖片？")) return;
     const filename = `img_${Date.now()}.png`;
     
-    // Save logic similar to text but binary... (Simplifying for brevity, assuming local mostly)
-    // For local mode:
     if(currentMode==='local' && localHandle) {
         const dir = await localHandle.getDirectoryHandle('assets').then(d=>d.getDirectoryHandle('images'));
         const fh = await dir.getFileHandle(filename, {create:true});
@@ -470,7 +460,7 @@ function insertText(el, text) {
     el.value = el.value.substring(0, start) + text + el.value.substring(end);
 }
 
-// CSV Export/Import (Simplified)
+// CSV Export/Import
 function generateCSVContent() {
     if (!currentData || !currentData.categories) return null;
     const rows = [["category_id", "category_title", "sub_id", "sub_title", "question_id", "question_title", "symptoms", "root_causes", "solution_steps", "keywords", "notes"]];
@@ -527,7 +517,6 @@ function importFromCSV(input) {
 }
 
 function parseCsvRows(rows) {
-    // Rebuild data structure from CSV rows
     const newCats = [];
     const catMap = {}; 
     const subMap = {}; 
@@ -570,7 +559,6 @@ function parseCsvRows(rows) {
     alert("CSV 匯入完成 (請記得儲存)");
 }
 
-// GitHub CSV Load (Simplified)
 async function loadCsvFromGithub() {
     alert("請先實作 GitHub CSV 下載邏輯 (參照 loadGithubFile)");
 }
