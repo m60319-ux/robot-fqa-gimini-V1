@@ -12,7 +12,7 @@ body {
     flex-direction: column; /* 前台預設垂直排列 */
 }
 
-/* ✨ 後台專用模式：強制左右排列 (三欄) */
+/* 後台專用模式：桌面版維持左右排列 */
 body.admin-mode {
     flex-direction: row; 
 }
@@ -152,3 +152,72 @@ button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
 input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
 textarea { resize: vertical; min-height: 80px; }
 select { width: 100%; padding: 8px; margin-bottom: 10px; }
+
+/* TOC 目錄樣式 */
+.toc-item { padding: 10px 15px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 500; user-select: none; transition: background 0.2s; }
+.toc-item:hover { background: #f0f0f0; }
+.toc-item.cat { font-weight: bold; background: #f8f9fa; border-bottom: 1px solid #eee; }
+.toc-item.sub { padding-left: 25px; color: #555; border-bottom: 1px solid #f9f9f9; }
+.hidden { display: none; }
+.arrow { transition: transform 0.3s ease; font-size: 0.8em; color: #999; }
+.toc-item.expanded .arrow { transform: rotate(180deg); }
+
+/* =========================================
+   5. 響應式設計 (Mobile Responsive)
+   ✨✨✨ 新增：針對 768px 以下螢幕優化 ✨✨✨
+   ========================================= */
+@media screen and (max-width: 768px) {
+    /* 1. 轉為垂直佈局 */
+    body.admin-mode, .container {
+        flex-direction: column;
+    }
+
+    /* 2. 側邊欄與列表寬度改為 100%，並限制高度 */
+    .sidebar, 
+    #admin-sidebar, 
+    .question-list-panel, 
+    #admin-list-panel {
+        width: 100% !important; /* 強制覆蓋固定寬度 */
+        height: 200px;          /* 給予固定高度，內部可滑動 */
+        min-height: 150px;
+        flex-shrink: 0;
+        border-right: none;
+        border-bottom: 2px solid #ccc; /* 增加分隔線 */
+    }
+
+    /* 3. 主要內容區佔滿剩餘空間 */
+    .content-panel, 
+    main#admin-main {
+        width: 100%;
+        flex: 1; /* 自動填滿剩下高度 */
+        padding: 15px; /* 減少內距 */
+    }
+
+    /* 4. Header 調整 */
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px;
+    }
+    header h1 { font-size: 1.2rem; }
+    .lang-switch {
+        width: 100%;
+        display: flex;
+        justify-content: space-between; /* 按鈕分散對齊 */
+    }
+
+    /* 5. 後台工具列堆疊 */
+    .main-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch; /* 讓按鈕寬度填滿 */
+    }
+    .group-left, .group-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .group-left button, .group-right button {
+        flex: 1; /* 按鈕平均分配寬度 */
+    }
+}
