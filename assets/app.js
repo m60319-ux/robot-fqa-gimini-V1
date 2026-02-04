@@ -248,7 +248,7 @@ function renderContent(q) {
     const processText = (text) => {
         if (!text) return "";
         return text.replace(/{{img:(.*?)}}/g, (match, path) => {
-            return `<div class="img-container img-size-medium"><img src="${path}" onclick="openFullscreen(this.src)"></div>`;
+            return `<div class="img-container img-size-small"><img src="${path}" onclick="openFullscreen(this.src)"></div>`;
         });
     };
 
