@@ -1,9 +1,9 @@
-// assets/app.js - V2.2 Globe Language Menu
+// assets/app.js - V2.3 Seamless Language Switch
 let currentLang = 'zh';
 let faqData = {}; 
 let fuse; 
-let activeSub = null; // 當前選中的子分類
-let activeQ = null;   // 當前選中的問題
+let activeSub = null; // 當前選中的子分類物件
+let activeQ = null;   // 當前選中的問題物件
 
 const DATA_VAR_MAP = {
     'zh': 'FAQ_DATA_ZH', 'cn': 'FAQ_DATA_CN', 'en': 'FAQ_DATA_EN', 'th': 'FAQ_DATA_TH'
@@ -24,16 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
         handleSearch(e.target.value);
     });
 
-    // ✨ 新增：點擊任意處關閉語言選單
     window.addEventListener('click', () => {
         const menu = document.getElementById('lang-menu');
         if (menu) menu.classList.remove('show');
     });
 });
 
-// ✨ 新增：切換語言選單顯示/隱藏
 window.toggleLangMenu = function(e) {
-    e.stopPropagation(); // 阻止冒泡，避免觸發 window click
+    e.stopPropagation(); 
     document.getElementById('lang-menu').classList.toggle('show');
 }
 
@@ -64,25 +62,91 @@ function initApp() {
     }
 }
 
+// ✨✨✨ 關鍵修改：切換語言時保留當前畫面 ✨✨✨
 function setLang(lang) {
+    // 1. 記錄當前正在看的 ID (如果有的話)
+    const currentQId = activeQ ? activeQ.id : null;
+    
     currentLang = lang;
     const url = new URL(window.location);
     url.searchParams.set('lang', lang);
     window.history.pushState({}, '', url);
 
+    // 2. 重新載入新語言資料
     initApp();
-    document.getElementById('question-list').innerHTML = '<div style="padding:40px 20px; text-align:center; color:#999;">請點選左側<br>📂 子分類</div>';
-    document.getElementById('content-display').innerHTML = '<div style="text-align:center; margin-top:100px; color:#aaa;"><h2>👋 Welcome</h2></div>';
     
-    // 語言選擇後，關閉選單
+    // 3. 嘗試還原狀態
+    if (currentQId) {
+        // 在新資料中尋找同一個 ID
+        const result = findPathById(currentQId);
+        
+        if (result) {
+            // 找到了！還原變數指向新物件
+            activeQ = result.q;
+            activeSub = result.sub;
+            
+            // 重新渲染三欄
+            renderContent(result.q);      // 右欄
+            loadQuestions(result.sub);    // 中欄
+            highlightSidebar(result.cat.id, result.sub.id); // 左欄 (自動展開)
+        } else {
+            // 新語言沒這題，只好回首頁
+            resetToWelcome();
+        }
+    } else {
+        // 原本就沒在看題目
+        resetToWelcome();
+    }
+    
     document.getElementById('lang-menu').classList.remove('show');
 }
 
+function resetToWelcome() {
+    document.getElementById('question-list').innerHTML = '<div style="padding:40px 20px; text-align:center; color:#999;">請點選左側<br>📂 子分類</div>';
+    document.getElementById('content-display').innerHTML = '<div style="text-align:center; margin-top:100px; color:#aaa;"><h2>👋 Welcome</h2></div>';
+}
+
 function updateLangButtons() {
-    // ✨ 修改：更新下拉選單中的 active 狀態
     document.querySelectorAll('.lang-option').forEach(opt => opt.classList.remove('active'));
     const activeOpt = document.getElementById(`opt-${currentLang}`);
     if(activeOpt) activeOpt.classList.add('active');
+}
+
+// ------------------------------------------------
+// 輔助邏輯：ID 搜尋與狀態還原
+// ------------------------------------------------
+
+// 在資料庫中尋找 ID 的完整路徑 (Category -> Sub -> Question)
+function findPathById(qId) {
+    if (!faqData.categories) return null;
+    for (const cat of faqData.categories) {
+        if (cat.subcategories) {
+            for (const sub of cat.subcategories) {
+                if (sub.questions) {
+                    const q = sub.questions.find(item => item.id === qId);
+                    if (q) return { cat, sub, q };
+                }
+            }
+        }
+    }
+    return null;
+}
+
+// 自動展開並高亮左側選單
+function highlightSidebar(catId, subId) {
+    // 1. 找到並展開分類
+    const catEl = document.querySelector(`.category-item[data-id="${catId}"]`);
+    if (catEl) {
+        document.querySelectorAll('.category-item').forEach(c => c.classList.remove('active'));
+        catEl.classList.add('active');
+    }
+    
+    // 2. 高亮子分類
+    const subEl = document.querySelector(`.sub-item[data-id="${subId}"]`);
+    if (subEl) {
+        document.querySelectorAll('.sub-item').forEach(s => s.classList.remove('active'));
+        subEl.classList.add('active');
+    }
 }
 
 // ------------------------------------------------
@@ -99,6 +163,7 @@ function renderSidebar() {
         const catDiv = document.createElement('div');
         catDiv.className = 'category-item';
         catDiv.textContent = cat.title || cat.id;
+        catDiv.dataset.id = cat.id; // ✨ 綁定 ID 以便查找
         
         const subList = document.createElement('div');
         subList.className = 'subcategory-list';
@@ -107,8 +172,12 @@ function renderSidebar() {
             cat.subcategories.forEach(sub => {
                 const subDiv = document.createElement('div');
                 subDiv.className = 'sub-item';
-                if (activeSub === sub) subDiv.classList.add('active');
                 subDiv.textContent = sub.title || sub.id;
+                subDiv.dataset.id = sub.id; // ✨ 綁定 ID 以便查找
+                
+                // 如果是剛切換語言還原狀態，需要檢查是否為當前 Sub
+                if (activeSub && activeSub.id === sub.id) subDiv.classList.add('active');
+
                 subDiv.onclick = (e) => {
                     e.stopPropagation();
                     loadQuestions(sub, subDiv);
@@ -130,8 +199,11 @@ function renderSidebar() {
 function loadQuestions(sub, subDivElement) {
     activeSub = sub;
     
-    document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
-    if(subDivElement) subDivElement.classList.add('active');
+    // 如果有傳入 DOM 元素就直接操作，沒有的話 (從 setLang 呼叫) 就不用管，交給 highlightSidebar 處理
+    if(subDivElement) {
+        document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
+        subDivElement.classList.add('active');
+    }
 
     const listPanel = document.getElementById('question-list');
     listPanel.innerHTML = '';
@@ -149,7 +221,9 @@ function loadQuestions(sub, subDivElement) {
 function createQuestionItem(q, container, showPath = false) {
     const item = document.createElement('div');
     item.className = 'q-item';
-    if (activeQ === q) item.classList.add('active');
+    
+    // 檢查 ID 是否匹配以設定高亮
+    if (activeQ && activeQ.id === q.id) item.classList.add('active');
     
     let html = `<span class="q-title">${q.title}</span>`;
     if (showPath) {
