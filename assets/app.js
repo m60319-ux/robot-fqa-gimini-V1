@@ -1,17 +1,15 @@
-// assets/app.js - V2.0 Three-Column Frontend
+// assets/app.js - V2.2 Globe Language Menu
 let currentLang = 'zh';
 let faqData = {}; 
 let fuse; 
 let activeSub = null; // 當前選中的子分類
 let activeQ = null;   // 當前選中的問題
 
-// 語言對應
 const DATA_VAR_MAP = {
     'zh': 'FAQ_DATA_ZH', 'cn': 'FAQ_DATA_CN', 'en': 'FAQ_DATA_EN', 'th': 'FAQ_DATA_TH'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 優先讀取 URL 參數中的語言設定
     const urlParams = new URLSearchParams(window.location.search);
     const langParam = urlParams.get('lang');
     if (langParam && DATA_VAR_MAP[langParam]) {
@@ -25,9 +23,20 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('search-input').addEventListener('input', (e) => {
         handleSearch(e.target.value);
     });
+
+    // ✨ 新增：點擊任意處關閉語言選單
+    window.addEventListener('click', () => {
+        const menu = document.getElementById('lang-menu');
+        if (menu) menu.classList.remove('show');
+    });
 });
 
-// 動態載入資料檔 (防快取)
+// ✨ 新增：切換語言選單顯示/隱藏
+window.toggleLangMenu = function(e) {
+    e.stopPropagation(); // 阻止冒泡，避免觸發 window click
+    document.getElementById('lang-menu').classList.toggle('show');
+}
+
 function loadDataScripts() {
     const langs = ['zh', 'cn', 'en', 'th'];
     const version = new Date().getTime();
@@ -36,7 +45,7 @@ function loadDataScripts() {
             const script = document.createElement('script');
             script.src = `assets/data/data.${lang}.js?v=${version}`;
             script.onload = resolve;
-            script.onerror = resolve; // 忽略錯誤繼續
+            script.onerror = resolve; 
             document.body.appendChild(script);
         });
     });
@@ -57,28 +66,29 @@ function initApp() {
 
 function setLang(lang) {
     currentLang = lang;
-    
-    // 更新 URL (方便分享連結)
     const url = new URL(window.location);
     url.searchParams.set('lang', lang);
     window.history.pushState({}, '', url);
 
     initApp();
-    // 清空右側
     document.getElementById('question-list').innerHTML = '<div style="padding:40px 20px; text-align:center; color:#999;">請點選左側<br>📂 子分類</div>';
     document.getElementById('content-display').innerHTML = '<div style="text-align:center; margin-top:100px; color:#aaa;"><h2>👋 Welcome</h2></div>';
+    
+    // 語言選擇後，關閉選單
+    document.getElementById('lang-menu').classList.remove('show');
 }
 
 function updateLangButtons() {
-    document.querySelectorAll('.lang-switch button').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`btn-${currentLang}`).classList.add('active');
+    // ✨ 修改：更新下拉選單中的 active 狀態
+    document.querySelectorAll('.lang-option').forEach(opt => opt.classList.remove('active'));
+    const activeOpt = document.getElementById(`opt-${currentLang}`);
+    if(activeOpt) activeOpt.classList.add('active');
 }
 
 // ------------------------------------------------
-// 渲染邏輯 (三欄式)
+// 渲染邏輯
 // ------------------------------------------------
 
-// 1. 左側：分類樹
 function renderSidebar() {
     const sidebar = document.getElementById('sidebar');
     sidebar.innerHTML = '';
@@ -107,7 +117,6 @@ function renderSidebar() {
             });
         }
 
-        // 點擊分類展開/收合
         catDiv.onclick = () => {
             document.querySelectorAll('.category-item').forEach(c => c.classList.remove('active'));
             catDiv.classList.add('active');
@@ -118,11 +127,9 @@ function renderSidebar() {
     });
 }
 
-// 2. 中間：問題列表
 function loadQuestions(sub, subDivElement) {
     activeSub = sub;
     
-    // 更新左側選中狀態
     document.querySelectorAll('.sub-item').forEach(el => el.classList.remove('active'));
     if(subDivElement) subDivElement.classList.add('active');
 
@@ -156,21 +163,14 @@ function createQuestionItem(q, container, showPath = false) {
         document.querySelectorAll('.q-item').forEach(el => el.classList.remove('active'));
         item.classList.add('active');
         renderContent(q);
-        
-        // 手機版優化：點擊後自動捲動到內容區
-        if (window.innerWidth <= 900) {
-            document.getElementById('content-display').scrollIntoView({ behavior: 'smooth' });
-        }
     };
     container.appendChild(item);
 }
 
-// 3. 右側：詳細內容
 function renderContent(q) {
     const display = document.getElementById('content-display');
     const c = q.content || {};
 
-    // 處理圖片標籤
     const processText = (text) => {
         if (!text) return "";
         return text.replace(/{{img:(.*?)}}/g, (match, path) => {
@@ -211,9 +211,6 @@ function renderContent(q) {
     `;
 }
 
-// ------------------------------------------------
-// 搜尋功能
-// ------------------------------------------------
 function initSearchIndex() {
     if (typeof Fuse === 'undefined') return;
     
@@ -226,7 +223,7 @@ function initSearchIndex() {
                         sub.questions.forEach(q => {
                             allQuestions.push({
                                 ...q,
-                                path: `${cat.title} > ${sub.title}` // 用於搜尋結果顯示路徑
+                                path: `${cat.title} > ${sub.title}`
                             });
                         });
                     }
@@ -247,7 +244,6 @@ function handleSearch(keyword) {
     const listPanel = document.getElementById('question-list');
     
     if (!keyword.trim()) {
-        // 清空搜尋時，如果當前有選中分類，還原該分類列表
         if (activeSub) {
             loadQuestions(activeSub);
         } else {
@@ -256,7 +252,6 @@ function handleSearch(keyword) {
         return;
     }
 
-    // 執行搜尋
     const results = fuse.search(keyword);
     listPanel.innerHTML = '';
 
@@ -266,13 +261,10 @@ function handleSearch(keyword) {
     }
 
     results.forEach(res => {
-        createQuestionItem(res.item, listPanel, true); // true = 顯示路徑
+        createQuestionItem(res.item, listPanel, true);
     });
 }
 
-// ------------------------------------------------
-// 圖片放大功能
-// ------------------------------------------------
 window.openFullscreen = function(src) {
     const overlay = document.getElementById('fs-overlay');
     const img = document.getElementById('fs-img');
