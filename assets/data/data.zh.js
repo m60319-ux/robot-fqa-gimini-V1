@@ -9,12 +9,12 @@ window.FAQ_DATA_ZH = {
             "title": "硬體問題",
             "subcategories": [
                 {
-                    "id": "SUB-01",
+                    "id": "SUB-101",
                     "title": "馬達異常",
                     "questions": []
                 },
                 {
-                    "id": "SUB-02",
+                    "id": "SUB-102",
                     "title": "驅動器異常",
                     "questions": [
                         {
@@ -109,7 +109,7 @@ window.FAQ_DATA_ZH = {
             "title": "軟體問題",
             "subcategories": [
                 {
-                    "id": "SUB-02",
+                    "id": "SUB-201",
                     "title": "操作異常",
                     "questions": [
                         {
@@ -134,11 +134,11 @@ window.FAQ_DATA_ZH = {
             ]
         },
         {
-            "id": "CAT-06",
+            "id": "CAT-03",
             "title": "",
             "subcategories": [
                 {
-                    "id": "SUB-02",
+                    "id": "SUB-301",
                     "title": "",
                     "questions": [
                         {
@@ -157,11 +157,11 @@ window.FAQ_DATA_ZH = {
             ]
         },
         {
-            "id": "CAT-07",
+            "id": "CAT-04",
             "title": "",
             "subcategories": [
                 {
-                    "id": "SUB-02",
+                    "id": "SUB-401",
                     "title": "",
                     "questions": [
                         {
