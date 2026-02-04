@@ -39,11 +39,36 @@ header {
 }
 header h1 { margin: 0; font-size: 1.5rem; white-space: nowrap; }
 
-/* ✨✨✨ 新增：Header 控制區樣式 ✨✨✨ */
+/* Header 控制區樣式 */
 .header-controls {
     display: flex;
     align-items: center;
     gap: 15px;
+}
+
+/* ✨✨✨ 新增：Header 搜尋欄樣式 ✨✨✨ */
+.header-search {
+    position: relative;
+    margin-right: 10px;
+}
+.header-search input {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #4a6fa5; /* 讓邊框顏色與深色背景協調 */
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    width: 250px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+.header-search input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+.header-search input:focus {
+    background-color: #fff;
+    color: #333;
+    width: 300px; /* 聚焦時稍微變寬 */
 }
 
 /* 語言下拉容器 */
@@ -71,7 +96,7 @@ header h1 { margin: 0; font-size: 1.5rem; white-space: nowrap; }
 
 /* 下拉選單 */
 .lang-menu {
-    display: none; /* 預設隱藏 */
+    display: none; 
     position: absolute;
     right: 0;
     top: 100%;
@@ -180,8 +205,7 @@ header h1 { margin: 0; font-size: 1.5rem; white-space: nowrap; }
 .sub-item:hover { background-color: #f8f9fa; color: #000; }
 .sub-item.active { color: #d35400; font-weight: bold; background-color: #fff3e0; }
 
-.search-box { padding: 15px; border-bottom: 1px solid #eee; background: white; position: sticky; top: 0; z-index: 5; }
-.search-box input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; padding-left: 15px; }
+/* ❌ 移除原本列表內的 .search-box 樣式，改用 header-search */
 
 .q-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; }
 .q-item:hover { background-color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -243,6 +267,7 @@ button { font-size: 14px; transition: background 0.2s; cursor: pointer; }
 #lightbox img { max-width: 90%; max-height: 90%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
 #lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 40px; cursor: pointer; }
 
-input, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
+/* 這些主要是給後台編輯表單用的 */
+input:not(#search-input), textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
 textarea { resize: vertical; min-height: 80px; }
 select { width: 100%; padding: 8px; margin-bottom: 10px; }
