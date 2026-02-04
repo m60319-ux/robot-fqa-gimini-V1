@@ -2,7 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- ✨ 關鍵修改：強制網頁寬度為 1280px，讓手機自動縮放顯示完整電腦版面 -->
+    <meta name="viewport" content="width=1280">
     <title>機器人故障排除助手</title>
     <link rel="stylesheet" href="assets/styles.css">
     <link rel="icon" href="data:,">
@@ -15,24 +16,38 @@
         <span style="font-size:24px; margin-right:10px;">🤖</span>
         <h1>機器人故障排除助手</h1>
     </div>
-    <div class="lang-switch">
-        <button onclick="setLang('zh')" id="btn-zh" class="active">繁中</button>
-        <button onclick="setLang('cn')" id="btn-cn">简中</button>
-        <button onclick="setLang('en')" id="btn-en">EN</button>
-        <button onclick="setLang('th')" id="btn-th">ไทย</button>
-        
-        <!-- 管理後台入口 -->
-        <button onclick="checkAdminPass()" style="margin-left: 15px; border-color: #f39c12; color: #f39c12;" title="進入管理後台">⚙️ 管理</button>
+    
+    <!-- ✨✨✨ 修改：新的 Header 控制區 (地球圖示 + 管理按鈕) ✨✨✨ -->
+    <div class="header-controls">
+        <!-- 語言下拉選單 -->
+        <div class="lang-dropdown">
+            <button onclick="toggleLangMenu(event)" class="lang-btn" title="切換語言">
+                <!-- 地球 SVG 圖示 -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+            </button>
+            <!-- 下拉清單 -->
+            <div id="lang-menu" class="lang-menu">
+                <div onclick="setLang('zh')" class="lang-option" id="opt-zh">繁體中文</div>
+                <div onclick="setLang('cn')" class="lang-option" id="opt-cn">简体中文</div>
+                <div onclick="setLang('en')" class="lang-option" id="opt-en">English</div>
+                <div onclick="setLang('th')" class="lang-option" id="opt-th">ไทย</div>
+            </div>
+        </div>
+
+        <!-- 管理後台按鈕 -->
+        <button onclick="checkAdminPass()" class="btn-admin-entry" title="進入管理後台">⚙️ 管理</button>
     </div>
 </header>
 
-<!-- 三欄式主容器 -->
+<!-- 三欄式佈局容器 -->
 <div class="container">
     
-    <!-- 第一欄：分類導覽 -->
-    <div class="sidebar" id="sidebar">
-        <!-- JS 動態生成分類樹 -->
-    </div>
+    <!-- 第一欄：分類 -->
+    <div class="sidebar" id="sidebar"></div>
 
     <!-- 第二欄：問題列表 -->
     <div class="question-list-panel" id="list-panel">
@@ -46,7 +61,7 @@
         </div>
     </div>
 
-    <!-- 第三欄：內容顯示 -->
+    <!-- 第三欄：內容 -->
     <div class="content-panel" id="content-display">
         <div style="text-align:center; margin-top:100px; color:#aaa;">
             <h2>👋 歡迎使用</h2>
@@ -60,7 +75,6 @@
     <img id="fs-img" src="">
 </div>
 
-<!-- 載入資料與程式 -->
 <script src="assets/app.js"></script>
 
 <script>
