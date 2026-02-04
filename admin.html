@@ -92,7 +92,6 @@
         <div class="card" id="editor-panel" style="display:none;">
             <h2>編輯內容 <span id="node-type" style="font-size:0.5em; background:#eee; padding:2px;"></span></h2>
             
-            <!-- ✨✨✨ 新增：移動分類選單 ✨✨✨ -->
             <div id="div-move-group" style="margin-bottom: 15px; display: none; background: #e3f2fd; padding: 10px; border-radius: 4px;">
                 <label style="color:#0056b3;">📂 所屬分類 (移動至...)</label>
                 <select id="inp-parent-sub" style="width:100%; padding:8px; border:1px solid #007bff;"></select>
@@ -102,10 +101,17 @@
             <label>標題 / 名稱</label><input type="text" id="inp-title">
             
             <div id="q-fields" style="display:none;">
-                <div class="hint">💡 提示：點擊文字框按 <b>Ctrl+V</b> 可貼上圖片 (自動上傳)</div>
-                <label>異常徵兆 (Symptoms)</label><textarea id="inp-symptoms" class="paste-area"></textarea>
-                <label>可能原因 (Root Causes)</label><textarea id="inp-causes" class="paste-area"></textarea>
-                <label>排查步驟 (Solution)</label><textarea id="inp-steps" class="paste-area"></textarea>
+                <div class="hint">💡 提示：在輸入框按 <b>Ctrl+V</b> 可直接貼上圖片</div>
+                
+                <!-- ✨✨✨ 修改：將 textarea 改為 div 容器 (Visual Editor) ✨✨✨ -->
+                <label>異常徵兆 (Symptoms)</label>
+                <div id="container-symptoms" class="list-editor-container"></div>
+                
+                <label>可能原因 (Root Causes)</label>
+                <div id="container-causes" class="list-editor-container"></div>
+                
+                <label>排查步驟 (Solution)</label>
+                <div id="container-steps" class="list-editor-container"></div>
                 
                 <label>關鍵字 (Keywords)</label>
                 <textarea id="inp-keywords" class="paste-area" placeholder="請輸入關鍵字，一行一個"></textarea>
